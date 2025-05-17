@@ -1,0 +1,125 @@
+.app-layout {
+  min-height: 100vh;
+}
+
+.app-content {
+  padding: 24px;
+  background-color: #f0f2f5;
+  min-height: calc(100vh - 64px - 70px); /* 减去导航栏和页脚高度 */
+}
+
+.app-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  font-size: 18px;
+  color: #1890ff;
+}
+
+/* 卡片样式 */
+.card {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.09);
+  margin-bottom: 16px;
+  transition: all 0.3s;
+}
+
+.card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.card-header {
+  border-bottom: 1px solid #f0f0f0;
+  padding: 16px 24px;
+}
+
+.card-title {
+  font-size: 16px;
+  color: rgba(0, 0, 0, 0.85);
+  font-weight: 500;
+  margin: 0;
+}
+
+.card-body {
+  padding: 24px;
+}
+
+/* 表单样式 */
+.form-container {
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.form-title {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.form-button {
+  width: 100%;
+}
+
+/* 目的地卡片样式 */
+.destination-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.destination-card-image {
+  height: 180px;
+  object-fit: cover;
+}
+
+.destination-card-content {
+  flex: 1;
+}
+
+/* 行程相关样式 */
+.itinerary-timeline {
+  margin: 24px 0;
+}
+
+.activity-card {
+  margin-bottom: 8px;
+  padding: 8px;
+  border-radius: 4px;
+  border-left: 3px solid #1890ff;
+}
+
+.activity-time {
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+.activity-title {
+  font-weight: 500;
+}
+
+/* 预算管理样式 */
+.budget-overview {
+  padding: 24px;
+  background: #fff;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.budget-progress {
+  margin: 16px 0;
+}
+
+.expense-list {
+  margin-top: 24px;
+}
+
+/* 协作编辑指示器 */
+.collaborator-indicator {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #52c41a;
+  margin-right: 8px;
+} 
