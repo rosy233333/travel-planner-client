@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   Typography, Card, Row, Col, Tabs, Button, Tag, Timeline,
   Descriptions, List, Avatar, Spin, Empty, Statistic, Divider,
-  message, Modal
+  message, Modal, Space
 } from 'antd';
 import {
   CalendarOutlined, TeamOutlined, DollarOutlined,
@@ -13,6 +13,8 @@ import {
 } from '@ant-design/icons';
 import { apiService } from '../utils/api';
 import { useAuth } from '../utils/AuthContext';
+import { TestItinerary } from '../assets/TestItinerary';
+import { getDestinationsInItinerary } from '../utils/getDestinationsItIninerary';
 
 const { Title, Text, Paragraph } = Typography;
 const { TabPane } = Tabs;
@@ -33,10 +35,13 @@ const ItineraryDetail = () => {
     try {
       setLoading(true);
       const response = await apiService.itineraries.getById(id);
-      setItinerary(response.data.itinerary);
+      const itinerary = response.data.itinerary;
+      const itinerary_with_destinations = getDestinationsInItinerary(itinerary);
+      setItinerary(itinerary_with_destinations);
     } catch (error) {
       console.error('获取行程详情失败:', error);
       message.error('获取行程详情失败');
+      setItinerary(TestItinerary);
     } finally {
       setLoading(false);
     }
@@ -65,11 +70,11 @@ const ItineraryDetail = () => {
 
   const getItineraryStatus = () => {
     if (!itinerary) return {};
-    
+
     const now = new Date();
     const startDate = new Date(itinerary.startDate);
     const endDate = new Date(itinerary.endDate);
-    
+
     if (now < startDate) {
       return { text: '即将开始', color: 'blue' };
     } else if (now >= startDate && now <= endDate) {
@@ -90,8 +95,8 @@ const ItineraryDetail = () => {
 
   if (!itinerary) {
     return (
-      <Empty 
-        description="行程不存在或已被删除" 
+      <Empty
+        description="行程不存在或已被删除"
         style={{ marginTop: 50 }}
       />
     );
@@ -101,9 +106,9 @@ const ItineraryDetail = () => {
 
   return (
     <div className="itinerary-detail-container">
-      <Button 
-        type="link" 
-        icon={<ArrowLeftOutlined />} 
+      <Button
+        type="link"
+        icon={<ArrowLeftOutlined />}
         onClick={() => navigate('/itineraries')}
         style={{ marginBottom: 16, padding: 0 }}
       >
@@ -128,20 +133,20 @@ const ItineraryDetail = () => {
           </Col>
           <Col xs={24} md={8} style={{ textAlign: 'right' }}>
             <Space>
-              <Button 
-                icon={<EditOutlined />} 
+              <Button
+                icon={<EditOutlined />}
                 onClick={() => navigate(`/itineraries/${id}/edit`)}
               >
                 编辑
               </Button>
-              <Button 
-                icon={<DollarOutlined />} 
+              <Button
+                icon={<DollarOutlined />}
                 onClick={() => navigate(`/budgets/${id}`)}
               >
                 预算
               </Button>
-              <Button 
-                icon={<ShareAltOutlined />} 
+              <Button
+                icon={<ShareAltOutlined />}
                 onClick={() => {
                   // 显示分享弹窗
                   message.info('分享功能即将推出');
@@ -149,9 +154,9 @@ const ItineraryDetail = () => {
               >
                 分享
               </Button>
-              <Button 
-                danger 
-                icon={<DeleteOutlined />} 
+              <Button
+                danger
+                icon={<DeleteOutlined />}
                 onClick={handleDelete}
               >
                 删除
@@ -162,13 +167,13 @@ const ItineraryDetail = () => {
       </div>
 
       <Tabs defaultActiveKey="overview">
-        <TabPane 
+        <TabPane
           tab={
             <span>
               <CalendarOutlined />
               概览
             </span>
-          } 
+          }
           key="overview"
         >
           <Row gutter={[24, 24]}>
@@ -178,18 +183,18 @@ const ItineraryDetail = () => {
                 <Paragraph>
                   {itinerary.description || '暂无描述'}
                 </Paragraph>
-                
+
                 <Divider orientation="left">目的地</Divider>
-                
-                {itinerary.destinations && itinerary.destinations.length > 0 ? (
+
+                {itinerary.destinations_data && itinerary.destinations_data.length > 0 ? (
                   <List
                     itemLayout="horizontal"
-                    dataSource={itinerary.destinations}
+                    dataSource={itinerary.destinations_data}
                     renderItem={destination => (
                       <List.Item
                         actions={[
-                          <Button 
-                            type="link" 
+                          <Button
+                            type="link"
                             onClick={() => navigate(`/destinations/${destination.id}`)}
                           >
                             查看
@@ -223,7 +228,7 @@ const ItineraryDetail = () => {
                         <div style={{ marginBottom: 8 }}>
                           <Text strong>第 {index + 1} 天 ({day.date})</Text>
                         </div>
-                        
+
                         {day.activities && day.activities.length > 0 ? (
                           <List
                             itemLayout="horizontal"
@@ -265,12 +270,12 @@ const ItineraryDetail = () => {
                     ))}
                   </Timeline>
                 ) : (
-                  <Empty 
-                    description="暂无日程安排" 
+                  <Empty
+                    description="暂无日程安排"
                     image={Empty.PRESENTED_IMAGE_SIMPLE}
                   >
-                    <Button 
-                      type="primary" 
+                    <Button
+                      type="primary"
                       onClick={() => navigate(`/itineraries/${id}/edit`)}
                     >
                       开始规划日程
@@ -283,22 +288,22 @@ const ItineraryDetail = () => {
             <Col xs={24} md={8}>
               {/* 行程信息卡片 */}
               <Card style={{ marginBottom: 24 }}>
-                <Statistic 
-                  title="总预算" 
-                  value={itinerary.totalBudget || 0} 
-                  prefix="¥" 
+                <Statistic
+                  title="总预算"
+                  value={itinerary.totalBudget || 0}
+                  prefix="¥"
                   style={{ marginBottom: 16 }}
                 />
-                
+
                 <Descriptions column={1} style={{ marginBottom: 16 }}>
                   <Descriptions.Item label="创建者">{itinerary.createdBy?.username || '未知'}</Descriptions.Item>
                   <Descriptions.Item label="创建时间">{new Date(itinerary.createdAt).toLocaleDateString()}</Descriptions.Item>
                   <Descriptions.Item label="最后更新">{new Date(itinerary.updatedAt).toLocaleDateString()}</Descriptions.Item>
                 </Descriptions>
-                
+
                 <div style={{ textAlign: 'center' }}>
-                  <Button 
-                    type="primary" 
+                  <Button
+                    type="primary"
                     onClick={() => navigate(`/budgets/${id}`)}
                     icon={<DollarOutlined />}
                     block
@@ -329,13 +334,13 @@ const ItineraryDetail = () => {
                     )}
                   />
                 ) : (
-                  <Empty 
-                    description="暂无协作者" 
+                  <Empty
+                    description="暂无协作者"
                     image={Empty.PRESENTED_IMAGE_SIMPLE}
                   />
                 )}
                 <div style={{ marginTop: 16, textAlign: 'center' }}>
-                  <Button 
+                  <Button
                     icon={<TeamOutlined />}
                     onClick={() => navigate(`/itineraries/${id}/edit`)}
                     block
@@ -354,11 +359,11 @@ const ItineraryDetail = () => {
                     renderItem={item => (
                       <List.Item
                         actions={[
-                          <CheckCircleOutlined 
-                            style={{ 
+                          <CheckCircleOutlined
+                            style={{
                               color: item.checked ? '#52c41a' : '#d9d9d9',
                               fontSize: 16
-                            }} 
+                            }}
                           />
                         ]}
                       >
@@ -367,8 +372,8 @@ const ItineraryDetail = () => {
                     )}
                   />
                 ) : (
-                  <Empty 
-                    description="暂无清单项目" 
+                  <Empty
+                    description="暂无清单项目"
                     image={Empty.PRESENTED_IMAGE_SIMPLE}
                   />
                 )}
@@ -376,19 +381,19 @@ const ItineraryDetail = () => {
             </Col>
           </Row>
         </TabPane>
-        
-        <TabPane 
+
+        <TabPane
           tab={
             <span>
               <TeamOutlined />
               协作
             </span>
-          } 
+          }
           key="collaborate"
         >
           <Card>
-            <Empty 
-              description="协作功能即将上线" 
+            <Empty
+              description="协作功能即将上线"
               image={Empty.PRESENTED_IMAGE_SIMPLE}
             >
               <Paragraph>

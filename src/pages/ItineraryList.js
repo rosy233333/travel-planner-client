@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Typography, Card, List, Button, Tag, Space, 
-  Dropdown, Menu, Empty, Spin, Input, Select, DatePicker 
+import {
+  Typography, Card, List, Button, Tag, Space,
+  Dropdown, Menu, Empty, Spin, Input, Select, DatePicker
 } from 'antd';
-import { 
-  PlusOutlined, CalendarOutlined, TeamOutlined, 
+import {
+  PlusOutlined, CalendarOutlined, TeamOutlined,
   DollarOutlined, EllipsisOutlined, FilterOutlined,
   SearchOutlined, EnvironmentOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../utils/api';
 import { useAuth } from '../utils/AuthContext';
+import { TestItinerary } from '../assets/TestItinerary';
+import { getDestinationsInItineraries } from '../utils/getDestinationsItIninerary';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -32,26 +34,30 @@ const ItineraryList = () => {
   const fetchItineraries = async () => {
     try {
       setLoading(true);
-      
+
       const params = {};
-      
+
       if (searchTerm) {
         params.search = searchTerm;
       }
-      
+
       if (statusFilter && statusFilter !== 'all') {
         params.status = statusFilter;
       }
-      
+
       if (dateRange && dateRange.length === 2) {
         params.startDate = dateRange[0].format('YYYY-MM-DD');
         params.endDate = dateRange[1].format('YYYY-MM-DD');
       }
-      
+
+      console.log(params);
       const response = await apiService.itineraries.getAll(params);
-      setItineraries(response.data.itineraries);
+      const itineraries = response.data.itineraries;
+      const itineraries_with_destinations = await getDestinationsInItineraries(itineraries);
+      setItineraries(itineraries_with_destinations);
     } catch (error) {
       console.error('获取行程列表失败:', error);
+      setItineraries([TestItinerary]);
     } finally {
       setLoading(false);
     }
@@ -73,7 +79,7 @@ const ItineraryList = () => {
     const now = new Date();
     const startDate = new Date(itinerary.startDate);
     const endDate = new Date(itinerary.endDate);
-    
+
     if (now < startDate) {
       return { text: '即将开始', color: 'blue' };
     } else if (now >= startDate && now <= endDate) {
@@ -122,8 +128,8 @@ const ItineraryList = () => {
       <div className="itinerary-list-header" style={{ marginBottom: 30 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Title level={2}>我的行程</Title>
-          <Button 
-            type="primary" 
+          <Button
+            type="primary"
             icon={<PlusOutlined />}
             onClick={() => navigate('/itineraries/create')}
           >
@@ -132,7 +138,7 @@ const ItineraryList = () => {
         </div>
         <Text type="secondary">管理您的所有旅行计划</Text>
       </div>
-      
+
       {/* 筛选器 */}
       <Card style={{ marginBottom: 24 }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
@@ -159,15 +165,15 @@ const ItineraryList = () => {
             </Select>
           </div>
           <div style={{ minWidth: 280 }}>
-            <RangePicker 
-              style={{ width: '100%' }} 
+            <RangePicker
+              style={{ width: '100%' }}
               placeholder={['开始日期', '结束日期']}
               onChange={handleDateRangeChange}
             />
           </div>
         </div>
       </Card>
-      
+
       {/* 行程列表 */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: '50px' }}>
@@ -182,7 +188,7 @@ const ItineraryList = () => {
               dataSource={itineraries}
               renderItem={itinerary => {
                 const status = getItineraryStatus(itinerary);
-                
+
                 return (
                   <List.Item>
                     <Card
@@ -200,9 +206,9 @@ const ItineraryList = () => {
                       }
                       onClick={() => navigate(`/itineraries/${itinerary._id}`)}
                       actions={[
-                        <Button 
-                          type="text" 
-                          icon={<CalendarOutlined />} 
+                        <Button
+                          type="text"
+                          icon={<CalendarOutlined />}
                           onClick={(e) => {
                             e.stopPropagation();
                             navigate(`/itineraries/${itinerary._id}`);
@@ -210,9 +216,9 @@ const ItineraryList = () => {
                         >
                           详情
                         </Button>,
-                        <Button 
-                          type="text" 
-                          icon={<TeamOutlined />} 
+                        <Button
+                          type="text"
+                          icon={<TeamOutlined />}
                           onClick={(e) => {
                             e.stopPropagation();
                             navigate(`/itineraries/${itinerary._id}/edit`);
@@ -220,9 +226,9 @@ const ItineraryList = () => {
                         >
                           编辑
                         </Button>,
-                        <Button 
-                          type="text" 
-                          icon={<DollarOutlined />} 
+                        <Button
+                          type="text"
+                          icon={<DollarOutlined />}
                           onClick={(e) => {
                             e.stopPropagation();
                             navigate(`/budgets/${itinerary._id}`);
@@ -243,7 +249,7 @@ const ItineraryList = () => {
                         </div>
                         <div style={{ marginBottom: 8 }}>
                           <EnvironmentOutlined style={{ marginRight: 8 }} />
-                          <Text>{itinerary.destinations?.map(d => d.name).join(', ') || '未指定目的地'}</Text>
+                          <Text>{itinerary.destinations_data?.map(d => d.name).join(', ') || '未指定目的地'}</Text>
                         </div>
                         <div>
                           <DollarOutlined style={{ marginRight: 8 }} />
@@ -256,14 +262,14 @@ const ItineraryList = () => {
               }}
             />
           ) : (
-            <Empty 
-              description="暂无行程" 
+            <Empty
+              description="暂无行程"
               style={{ marginTop: 50 }}
               image={Empty.PRESENTED_IMAGE_SIMPLE}
             >
-              <Button 
-                type="primary" 
-                icon={<PlusOutlined />} 
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
                 onClick={() => navigate('/itineraries/create')}
               >
                 创建第一个行程

@@ -32,18 +32,18 @@ const { Content } = Layout;
 
 function App() {
   const [loading, setLoading] = useState(true);
-  
+
   useEffect(() => {
     // 应用初始化，检查认证状态等
     setTimeout(() => {
       setLoading(false);
-    }, 1000);
+    }, 0);
   }, []);
-  
+
   if (loading) {
     return <div className="app-loader">加载中...</div>;
   }
-  
+
   return (
     <ConfigProvider locale={zhCN}>
       <AuthProvider>
@@ -55,61 +55,61 @@ function App() {
                 <Route path="/" element={<Navigate replace to="/dashboard" />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
-                
+
                 <Route path="/dashboard" element={
                   <ProtectedRoute>
                     <Dashboard />
                   </ProtectedRoute>
                 } />
-                
+
                 <Route path="/destinations" element={
                   <ProtectedRoute>
                     <DestinationList />
                   </ProtectedRoute>
                 } />
-                
+
                 <Route path="/destinations/:id" element={
                   <ProtectedRoute>
                     <DestinationDetail />
                   </ProtectedRoute>
                 } />
-                
+
                 <Route path="/itineraries" element={
                   <ProtectedRoute>
                     <ItineraryList />
                   </ProtectedRoute>
                 } />
-                
+
                 <Route path="/itineraries/create" element={
                   <ProtectedRoute>
                     <ItineraryCreate />
                   </ProtectedRoute>
                 } />
-                
+
                 <Route path="/itineraries/:id" element={
                   <ProtectedRoute>
                     <ItineraryDetail />
                   </ProtectedRoute>
                 } />
-                
+
                 <Route path="/itineraries/:id/edit" element={
                   <ProtectedRoute>
                     <ItineraryEdit />
                   </ProtectedRoute>
                 } />
-                
+
                 <Route path="/budgets/:itineraryId" element={
                   <ProtectedRoute>
                     <BudgetManager />
                   </ProtectedRoute>
                 } />
-                
+
                 <Route path="/profile" element={
                   <ProtectedRoute>
                     <UserProfile />
                   </ProtectedRoute>
                 } />
-                
+
                 <Route path="*" element={<Navigate replace to="/dashboard" />} />
               </Routes>
             </Content>

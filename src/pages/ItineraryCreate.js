@@ -13,6 +13,7 @@ import {
 import moment from 'moment';
 import { apiService } from '../utils/api';
 import { useAuth } from '../utils/AuthContext';
+import { TestDestinations } from '../assets/TestDestinations';
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -25,6 +26,7 @@ const ItineraryCreate = () => {
   const location = useLocation();
   const { user } = useAuth();
   const [form] = Form.useForm();
+  const [formData, setFormData] = useState({})
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [destinations, setDestinations] = useState([]);
@@ -35,7 +37,7 @@ const ItineraryCreate = () => {
 
   useEffect(() => {
     fetchDestinations();
-    
+
     // 如果是从目的地详情页跳转来的，预填充目的地信息
     if (location.state && location.state.destination) {
       const { destination } = location.state;
@@ -46,6 +48,10 @@ const ItineraryCreate = () => {
     }
   }, []);
 
+  useEffect(() => {
+    console.log("formData: ", formData);
+  }, [formData])
+
   const fetchDestinations = async () => {
     try {
       setLoading(true);
@@ -54,6 +60,7 @@ const ItineraryCreate = () => {
     } catch (error) {
       console.error('获取目的地列表失败:', error);
       message.error('获取目的地列表失败');
+      setDestinations(TestDestinations);
     } finally {
       setLoading(false);
     }
@@ -69,12 +76,18 @@ const ItineraryCreate = () => {
       const startDate = dates[0];
       const endDate = dates[1];
       const duration = endDate.diff(startDate, 'days') + 1;
-      
+
       form.setFieldsValue({
         duration
       });
     }
   };
+
+  const storeFormData = () => {
+    const values = form.getFieldsValue();
+    console.log("values: ", values);
+    setFormData({ ...formData, ...values });
+  }
 
   const handleNext = async () => {
     try {
@@ -83,7 +96,7 @@ const ItineraryCreate = () => {
       } else if (currentStep === 1) {
         await form.validateFields(['totalBudget', 'description']);
       }
-      
+      storeFormData();
       setCurrentStep(currentStep + 1);
     } catch (error) {
       console.error('表单验证失败:', error);
@@ -101,9 +114,11 @@ const ItineraryCreate = () => {
   const handleGenerateItinerary = async () => {
     try {
       await form.validateFields();
-      
-      const values = form.getFieldsValue();
-      
+      storeFormData();
+
+      const values = formData;
+      console.log(values);
+
       // 准备生成参数
       const generationParams = {
         title: values.title,
@@ -120,13 +135,13 @@ const ItineraryCreate = () => {
           specialRequirements: values.specialRequirements
         }
       };
-      
+
       setGenerating(true);
-      
+
       // 调用生成API
       const response = await apiService.itineraries.generate(generationParams);
       setGeneratedItinerary(response.data.itinerary);
-      
+
       message.success('行程生成成功！');
     } catch (error) {
       console.error('生成行程失败:', error);
@@ -139,11 +154,13 @@ const ItineraryCreate = () => {
   const handleCreateItinerary = async () => {
     try {
       await form.validateFields();
-      
+      storeFormData();
+
       setLoading(true);
-      
-      const values = form.getFieldsValue();
-      
+
+      const values = formData;
+      console.log(values);
+
       // 准备创建行程的数据
       const itineraryData = {
         title: values.title,
@@ -162,16 +179,16 @@ const ItineraryCreate = () => {
           specialRequirements: values.specialRequirements
         }
       };
-      
+
       // 如果是使用AI生成的，则使用生成的行程
       if (useAI && generatedItinerary) {
         itineraryData.itineraryDays = generatedItinerary.itineraryDays;
       }
-      
+
       const response = await apiService.itineraries.create(itineraryData);
-      
+
       message.success('行程创建成功！');
-      
+
       // 跳转到行程详情页
       navigate(`/itineraries/${response.data.itinerary._id}`);
     } catch (error) {
@@ -195,7 +212,7 @@ const ItineraryCreate = () => {
             >
               <Input placeholder="例如：东京5日游" />
             </Form.Item>
-            
+
             <Form.Item
               name="destinations"
               label="目的地"
@@ -218,7 +235,7 @@ const ItineraryCreate = () => {
                 ))}
               </Select>
             </Form.Item>
-            
+
             <Form.Item
               name="dateRange"
               label="行程日期"
@@ -229,7 +246,7 @@ const ItineraryCreate = () => {
                 onChange={handleDateRangeChange}
               />
             </Form.Item>
-            
+
             <Form.Item
               name="duration"
               label="行程天数"
@@ -237,7 +254,7 @@ const ItineraryCreate = () => {
             >
               <InputNumber min={1} max={30} style={{ width: '100%' }} disabled />
             </Form.Item>
-            
+
             {selectedDestinations.length > 0 && (
               <div style={{ marginTop: 16 }}>
                 <Title level={5}>已选择的目的地：</Title>
@@ -262,7 +279,7 @@ const ItineraryCreate = () => {
             )}
           </div>
         );
-      
+
       case 1:
         return (
           <div className="step-content">
@@ -279,7 +296,7 @@ const ItineraryCreate = () => {
                 placeholder="例如：5000"
               />
             </Form.Item>
-            
+
             <Form.Item
               name="description"
               label="行程描述"
@@ -289,7 +306,7 @@ const ItineraryCreate = () => {
                 rows={4}
               />
             </Form.Item>
-            
+
             <Form.Item
               name="isShared"
               label="是否共享行程"
@@ -297,9 +314,9 @@ const ItineraryCreate = () => {
             >
               <Switch />
             </Form.Item>
-            
+
             <Divider orientation="left">偏好设置（可选）</Divider>
-            
+
             <Row gutter={[16, 16]}>
               <Col xs={24} md={12}>
                 <Form.Item
@@ -313,7 +330,7 @@ const ItineraryCreate = () => {
                   </Select>
                 </Form.Item>
               </Col>
-              
+
               <Col xs={24} md={12}>
                 <Form.Item
                   name="accommodationType"
@@ -326,7 +343,7 @@ const ItineraryCreate = () => {
                   </Select>
                 </Form.Item>
               </Col>
-              
+
               <Col xs={24} md={12}>
                 <Form.Item
                   name="transportationType"
@@ -339,7 +356,7 @@ const ItineraryCreate = () => {
                   </Select>
                 </Form.Item>
               </Col>
-              
+
               <Col xs={24} md={12}>
                 <Form.Item
                   name="activityPreferences"
@@ -356,7 +373,7 @@ const ItineraryCreate = () => {
                   </Select>
                 </Form.Item>
               </Col>
-              
+
               <Col xs={24}>
                 <Form.Item
                   name="specialRequirements"
@@ -371,7 +388,7 @@ const ItineraryCreate = () => {
             </Row>
           </div>
         );
-      
+
       case 2:
         return (
           <div className="step-content">
@@ -382,7 +399,7 @@ const ItineraryCreate = () => {
               showIcon
               style={{ marginBottom: 24 }}
             />
-            
+
             <div style={{ textAlign: 'center', marginBottom: 24 }}>
               <Space align="center">
                 <Text>手动规划</Text>
@@ -395,7 +412,7 @@ const ItineraryCreate = () => {
                 <Text strong={useAI}>AI智能规划</Text>
               </Space>
             </div>
-            
+
             {useAI ? (
               <>
                 {!generatedItinerary ? (
@@ -409,7 +426,7 @@ const ItineraryCreate = () => {
                     >
                       {generating ? '正在生成行程...' : '生成AI行程'}
                     </Button>
-                    
+
                     {generating && (
                       <div style={{ marginTop: 24 }}>
                         <Spin spinning={true} />
@@ -428,12 +445,12 @@ const ItineraryCreate = () => {
                       showIcon
                       style={{ marginBottom: 24 }}
                     />
-                    
+
                     <Card title="AI行程概览">
                       <Paragraph>
                         {generatedItinerary.description || '基于您的偏好，我们为您生成了一个定制化的行程安排。'}
                       </Paragraph>
-                      
+
                       {generatedItinerary.itineraryDays.map((day, index) => (
                         <Card
                           size="small"
@@ -467,7 +484,7 @@ const ItineraryCreate = () => {
             )}
           </div>
         );
-      
+
       default:
         return null;
     }
@@ -475,27 +492,27 @@ const ItineraryCreate = () => {
 
   return (
     <div className="itinerary-create-container">
-      <Button 
-        type="link" 
-        icon={<ArrowLeftOutlined />} 
+      <Button
+        type="link"
+        icon={<ArrowLeftOutlined />}
         onClick={() => navigate('/itineraries')}
         style={{ marginBottom: 16, padding: 0 }}
       >
         返回行程列表
       </Button>
-      
+
       <Card>
         <div className="itinerary-create-header" style={{ marginBottom: 30 }}>
           <Title level={2}>创建新行程</Title>
           <Text type="secondary">填写以下信息，开始规划您的旅程</Text>
         </div>
-        
+
         <Steps current={currentStep} style={{ marginBottom: 30 }}>
           <Step title="基本信息" icon={<CalendarOutlined />} />
           <Step title="预算和偏好" icon={<DollarOutlined />} />
           <Step title="智能规划" icon={<RocketOutlined />} />
         </Steps>
-        
+
         <Form
           form={form}
           layout="vertical"
@@ -509,20 +526,20 @@ const ItineraryCreate = () => {
           }}
         >
           {renderStepContent()}
-          
+
           <div className="steps-action" style={{ marginTop: 24, display: 'flex', justifyContent: 'space-between' }}>
             {currentStep > 0 && (
               <Button onClick={handlePrev}>
                 上一步
               </Button>
             )}
-            
+
             {currentStep < 2 && (
               <Button type="primary" onClick={handleNext}>
                 下一步
               </Button>
             )}
-            
+
             {currentStep === 2 && (
               <Button
                 type="primary"

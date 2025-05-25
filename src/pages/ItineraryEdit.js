@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   Form, Input, DatePicker, InputNumber, Select, Button,
   Card, Typography, message, Spin, Tabs, Row, Col,
-  Divider, List, Timeline, Modal, Space, Avatar, Tag, Empty
+  Divider, List, Timeline, Modal, Space, Avatar, Tag, Empty, Switch
 } from 'antd';
 import {
   CalendarOutlined, EditOutlined, DeleteOutlined, PlusOutlined,
@@ -13,6 +13,8 @@ import {
 import moment from 'moment';
 import { apiService } from '../utils/api';
 import { useAuth } from '../utils/AuthContext';
+import { TestItinerary } from '../assets/TestItinerary';
+import { TestDestinations } from '../assets/TestDestinations';
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -48,37 +50,43 @@ const ItineraryEdit = () => {
   const fetchItineraryDetail = async () => {
     try {
       setLoading(true);
-      const response = await apiService.itineraries.getById(id);
-      const itineraryData = response.data.itinerary;
-      setItinerary(itineraryData);
-      setCollaborators(itineraryData.collaborators || []);
+      try {
+        const response = await apiService.itineraries.getById(id);
+        const itineraryData = response.data.itinerary;
+        setItinerary(itineraryData);
+      } catch (error) {
+        setItinerary(TestItinerary);
+      }
+
+      setCollaborators(itinerary.collaborators || []);
 
       // 设置表单值
       form.setFieldsValue({
-        title: itineraryData.title,
-        destinations: itineraryData.destinations?.map(d => d.id),
+        title: itinerary.title,
+        destinations: itinerary.destinations?.map(d => d.id),
         dateRange: [
-          moment(itineraryData.startDate),
-          moment(itineraryData.endDate)
+          moment(itinerary.startDate),
+          moment(itinerary.endDate)
         ],
-        duration: itineraryData.duration,
-        totalBudget: itineraryData.totalBudget,
-        description: itineraryData.description,
-        isShared: itineraryData.isShared,
-        pacePreference: itineraryData.preferences?.pacePreference,
-        accommodationType: itineraryData.preferences?.accommodationType,
-        transportationType: itineraryData.preferences?.transportationType,
-        activityPreferences: itineraryData.preferences?.activityPreferences,
-        specialRequirements: itineraryData.preferences?.specialRequirements
+        duration: itinerary.duration,
+        totalBudget: itinerary.totalBudget,
+        description: itinerary.description,
+        isShared: itinerary.isShared,
+        pacePreference: itinerary.preferences?.pacePreference,
+        accommodationType: itinerary.preferences?.accommodationType,
+        transportationType: itinerary.preferences?.transportationType,
+        activityPreferences: itinerary.preferences?.activityPreferences,
+        specialRequirements: itinerary.preferences?.specialRequirements
       });
 
       // 设置已选择的目的地
-      if (itineraryData.destinations && itineraryData.destinations.length > 0) {
-        setSelectedDestinations(itineraryData.destinations);
+      if (itinerary.destinations && itinerary.destinations.length > 0) {
+        setSelectedDestinations(itinerary.destinations);
       }
     } catch (error) {
       console.error('获取行程详情失败:', error);
       message.error('获取行程详情失败');
+
     } finally {
       setLoading(false);
     }
@@ -91,6 +99,7 @@ const ItineraryEdit = () => {
     } catch (error) {
       console.error('获取目的地列表失败:', error);
       message.error('获取目的地列表失败');
+      setDestinations(TestDestinations);
     }
   };
 
@@ -104,7 +113,8 @@ const ItineraryEdit = () => {
       const startDate = dates[0];
       const endDate = dates[1];
       const duration = endDate.diff(startDate, 'days') + 1;
-      
+
+
       form.setFieldsValue({
         duration
       });
@@ -118,11 +128,11 @@ const ItineraryEdit = () => {
   const handleSaveItinerary = async () => {
     try {
       await form.validateFields();
-      
+
       setSaving(true);
-      
+
       const values = form.getFieldsValue();
-      
+
       // 准备更新行程的数据
       const itineraryData = {
         title: values.title,
@@ -141,9 +151,9 @@ const ItineraryEdit = () => {
           specialRequirements: values.specialRequirements
         }
       };
-      
+
       await apiService.itineraries.update(id, itineraryData);
-      
+
       message.success('行程更新成功！');
       await fetchItineraryDetail(); // 重新获取行程信息
     } catch (error) {
@@ -165,7 +175,7 @@ const ItineraryEdit = () => {
   const showEditActivityModal = (day, activity) => {
     setCurrentDay(day);
     setCurrentActivity(activity);
-    
+
     activityForm.setFieldsValue({
       title: activity.title,
       timeStart: activity.timeStart,
@@ -173,7 +183,7 @@ const ItineraryEdit = () => {
       location: activity.location,
       description: activity.description
     });
-    
+
     setActivityModalVisible(true);
   };
 
@@ -185,18 +195,18 @@ const ItineraryEdit = () => {
   const handleActivityModalOk = async () => {
     try {
       const values = await activityForm.validateFields();
-      
+
       // 深拷贝当前行程
       const updatedItinerary = { ...itinerary };
       let dayIndex = -1;
-      
+
       // 查找当前日期的索引
       if (updatedItinerary.itineraryDays) {
         dayIndex = updatedItinerary.itineraryDays.findIndex(d => d.date === currentDay.date);
       } else {
         updatedItinerary.itineraryDays = [];
       }
-      
+
       // 如果找不到当前日期，则创建新的一天
       if (dayIndex === -1) {
         const newDay = {
@@ -206,7 +216,7 @@ const ItineraryEdit = () => {
         updatedItinerary.itineraryDays.push(newDay);
         dayIndex = updatedItinerary.itineraryDays.length - 1;
       }
-      
+
       // 创建或更新活动
       const activity = {
         title: values.title,
@@ -215,13 +225,13 @@ const ItineraryEdit = () => {
         location: values.location,
         description: values.description
       };
-      
+
       if (currentActivity) {
         // 更新现有活动
         const actIndex = updatedItinerary.itineraryDays[dayIndex].activities.findIndex(
           a => a.title === currentActivity.title && a.timeStart === currentActivity.timeStart
         );
-        
+
         if (actIndex !== -1) {
           updatedItinerary.itineraryDays[dayIndex].activities[actIndex] = activity;
         }
@@ -232,10 +242,10 @@ const ItineraryEdit = () => {
         }
         updatedItinerary.itineraryDays[dayIndex].activities.push(activity);
       }
-      
+
       // 更新行程
       await apiService.itineraries.update(id, updatedItinerary);
-      
+
       message.success(currentActivity ? '活动更新成功' : '活动添加成功');
       setActivityModalVisible(false);
       activityForm.resetFields();
@@ -259,18 +269,18 @@ const ItineraryEdit = () => {
           // 深拷贝当前行程
           const updatedItinerary = { ...itinerary };
           const dayIndex = updatedItinerary.itineraryDays.findIndex(d => d.date === day.date);
-          
+
           if (dayIndex !== -1) {
             const actIndex = updatedItinerary.itineraryDays[dayIndex].activities.findIndex(
               a => a.title === activity.title && a.timeStart === activity.timeStart
             );
-            
+
             if (actIndex !== -1) {
               updatedItinerary.itineraryDays[dayIndex].activities.splice(actIndex, 1);
-              
+
               // 更新行程
               await apiService.itineraries.update(id, updatedItinerary);
-              
+
               message.success('活动删除成功');
               await fetchItineraryDetail(); // 重新获取行程信息
             }
@@ -299,9 +309,9 @@ const ItineraryEdit = () => {
         message.error('请输入用户邮箱');
         return;
       }
-      
+
       await apiService.itineraries.manageCollaborators(id, userEmail, 'add');
-      
+
       message.success('协作者添加成功');
       setCollaboratorModalVisible(false);
       await fetchItineraryDetail(); // 重新获取行程信息
@@ -322,7 +332,7 @@ const ItineraryEdit = () => {
       async onOk() {
         try {
           await apiService.itineraries.manageCollaborators(id, collaboratorId, 'remove');
-          
+
           message.success('协作者移除成功');
           await fetchItineraryDetail(); // 重新获取行程信息
         } catch (error) {
@@ -338,7 +348,7 @@ const ItineraryEdit = () => {
     const start = moment(startDate);
     const end = moment(endDate);
     const days = [];
-    
+
     let current = start;
     while (current <= end) {
       days.push({
@@ -348,7 +358,7 @@ const ItineraryEdit = () => {
       });
       current = current.clone().add(1, 'days');
     }
-    
+
     return days;
   };
 
@@ -363,8 +373,8 @@ const ItineraryEdit = () => {
 
   if (!itinerary) {
     return (
-      <Empty 
-        description="行程不存在或已被删除" 
+      <Empty
+        description="行程不存在或已被删除"
         style={{ marginTop: 50 }}
       />
     );
@@ -372,7 +382,7 @@ const ItineraryEdit = () => {
 
   // 获取行程日期范围内的所有天
   const days = getDaysBetweenDates(itinerary.startDate, itinerary.endDate);
-  
+
   // 合并现有活动到日期数组
   if (itinerary.itineraryDays && itinerary.itineraryDays.length > 0) {
     itinerary.itineraryDays.forEach(day => {
@@ -385,23 +395,23 @@ const ItineraryEdit = () => {
 
   return (
     <div className="itinerary-edit-container">
-      <Button 
-        type="link" 
-        icon={<ArrowLeftOutlined />} 
+      <Button
+        type="link"
+        icon={<ArrowLeftOutlined />}
         onClick={() => navigate(`/itineraries/${id}`)}
         style={{ marginBottom: 16, padding: 0 }}
       >
         返回行程详情
       </Button>
-      
+
       <div className="itinerary-edit-header" style={{ marginBottom: 24 }}>
         <Title level={2}>编辑行程: {itinerary.title}</Title>
         <Text type="secondary">在此页面编辑行程详情、日程安排和协作者</Text>
       </div>
-      
+
       <Tabs activeKey={activeTabKey} onChange={handleTabChange}>
-        <TabPane 
-          tab={<span><CalendarOutlined />基本信息</span>} 
+        <TabPane
+          tab={<span><CalendarOutlined />基本信息</span>}
           key="basic"
         >
           <Card>
@@ -423,7 +433,7 @@ const ItineraryEdit = () => {
                     <Input placeholder="例如：东京5日游" />
                   </Form.Item>
                 </Col>
-                
+
                 <Col xs={24} md={12}>
                   <Form.Item
                     name="dateRange"
@@ -436,7 +446,7 @@ const ItineraryEdit = () => {
                     />
                   </Form.Item>
                 </Col>
-                
+
                 <Col xs={24} md={12}>
                   <Form.Item
                     name="destinations"
@@ -461,7 +471,7 @@ const ItineraryEdit = () => {
                     </Select>
                   </Form.Item>
                 </Col>
-                
+
                 <Col xs={24} md={12}>
                   <Form.Item
                     name="totalBudget"
@@ -477,7 +487,7 @@ const ItineraryEdit = () => {
                     />
                   </Form.Item>
                 </Col>
-                
+
                 <Col xs={24}>
                   <Form.Item
                     name="description"
@@ -489,7 +499,7 @@ const ItineraryEdit = () => {
                     />
                   </Form.Item>
                 </Col>
-                
+
                 <Col xs={24} md={12}>
                   <Form.Item
                     name="duration"
@@ -499,7 +509,7 @@ const ItineraryEdit = () => {
                     <InputNumber min={1} max={30} style={{ width: '100%' }} disabled />
                   </Form.Item>
                 </Col>
-                
+
                 <Col xs={24} md={12}>
                   <Form.Item
                     name="isShared"
@@ -510,9 +520,9 @@ const ItineraryEdit = () => {
                   </Form.Item>
                 </Col>
               </Row>
-              
+
               <Divider orientation="left">偏好设置（可选）</Divider>
-              
+
               <Row gutter={[16, 16]}>
                 <Col xs={24} md={12}>
                   <Form.Item name="pacePreference" label="行程节奏">
@@ -523,7 +533,7 @@ const ItineraryEdit = () => {
                     </Select>
                   </Form.Item>
                 </Col>
-                
+
                 <Col xs={24} md={12}>
                   <Form.Item name="accommodationType" label="住宿类型">
                     <Select placeholder="选择住宿类型">
@@ -533,7 +543,7 @@ const ItineraryEdit = () => {
                     </Select>
                   </Form.Item>
                 </Col>
-                
+
                 <Col xs={24} md={12}>
                   <Form.Item name="transportationType" label="交通方式">
                     <Select placeholder="选择主要交通方式">
@@ -543,7 +553,7 @@ const ItineraryEdit = () => {
                     </Select>
                   </Form.Item>
                 </Col>
-                
+
                 <Col xs={24} md={12}>
                   <Form.Item name="activityPreferences" label="活动偏好">
                     <Select mode="multiple" placeholder="选择活动偏好">
@@ -558,7 +568,7 @@ const ItineraryEdit = () => {
                   </Form.Item>
                 </Col>
               </Row>
-              
+
               <div style={{ marginTop: 24, textAlign: 'right' }}>
                 <Button
                   type="primary"
@@ -572,9 +582,9 @@ const ItineraryEdit = () => {
             </Form>
           </Card>
         </TabPane>
-        
-        <TabPane 
-          tab={<span><CalendarOutlined />日程安排</span>} 
+
+        <TabPane
+          tab={<span><CalendarOutlined />日程安排</span>}
           key="schedule"
         >
           <Card>
@@ -594,7 +604,7 @@ const ItineraryEdit = () => {
                         添加活动
                       </Button>
                     </div>
-                    
+
                     {day.activities && day.activities.length > 0 ? (
                       <List
                         itemLayout="horizontal"
@@ -659,9 +669,9 @@ const ItineraryEdit = () => {
             </Timeline>
           </Card>
         </TabPane>
-        
-        <TabPane 
-          tab={<span><TeamOutlined />协作者</span>} 
+
+        <TabPane
+          tab={<span><TeamOutlined />协作者</span>}
           key="collaborators"
         >
           <Card title="管理协作者">
@@ -674,7 +684,7 @@ const ItineraryEdit = () => {
                 添加协作者
               </Button>
             </div>
-            
+
             <List
               itemLayout="horizontal"
               dataSource={collaborators}
@@ -707,7 +717,7 @@ const ItineraryEdit = () => {
           </Card>
         </TabPane>
       </Tabs>
-      
+
       {/* 活动编辑/添加模态框 */}
       <Modal
         title={currentActivity ? "编辑活动" : "添加活动"}
@@ -728,7 +738,7 @@ const ItineraryEdit = () => {
           >
             <Input placeholder="例如：参观博物馆" />
           </Form.Item>
-          
+
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
@@ -747,14 +757,14 @@ const ItineraryEdit = () => {
               </Form.Item>
             </Col>
           </Row>
-          
+
           <Form.Item
             name="location"
             label="地点"
           >
             <Input placeholder="例如：东京国立博物馆" />
           </Form.Item>
-          
+
           <Form.Item
             name="description"
             label="活动描述"
@@ -766,7 +776,7 @@ const ItineraryEdit = () => {
           </Form.Item>
         </Form>
       </Modal>
-      
+
       {/* 添加协作者模态框 */}
       <Modal
         title="添加协作者"

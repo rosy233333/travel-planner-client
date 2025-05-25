@@ -13,15 +13,17 @@ api.interceptors.request.use(
   (config) => {
     // 从本地存储获取令牌
     const token = localStorage.getItem('token');
-    
+
     // 如果有令牌，添加到请求头
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
-    
+
+    console.log('请求发送: ', config);
     return config;
   },
   (error) => {
+    console.log('请求发送错误: ', error);
     return Promise.reject(error);
   }
 );
@@ -29,20 +31,22 @@ api.interceptors.request.use(
 // 响应拦截器
 api.interceptors.response.use(
   (response) => {
+    console.log('响应接收: ', response);
     return response;
   },
   (error) => {
+    console.log('响应接收错误: ', error);
     // 处理401未授权错误
     if (error.response && error.response.status === 401) {
       // 清除本地令牌
       localStorage.removeItem('token');
-      
+
       // 如果不是登录/注册页面，重定向到登录页
       if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/register')) {
         window.location.href = '/login';
       }
     }
-    
+
     return Promise.reject(error);
   }
 );
@@ -56,7 +60,7 @@ const apiService = {
     getCurrentUser: () => api.get('/auth/me'),
     updatePreferences: (preferences) => api.put('/auth/preferences', { preferences })
   },
-  
+
   // 目的地
   destinations: {
     getAll: (params) => api.get('/destinations', { params }),
@@ -66,7 +70,7 @@ const apiService = {
     update: (id, destinationData) => api.put(`/destinations/${id}`, destinationData),
     delete: (id) => api.delete(`/destinations/${id}`)
   },
-  
+
   // 行程
   itineraries: {
     getAll: (params) => api.get('/itineraries', { params }),
@@ -74,11 +78,11 @@ const apiService = {
     generate: (generationParams) => api.post('/itineraries/generate', generationParams),
     create: (itineraryData) => api.post('/itineraries', itineraryData),
     update: (id, itineraryData) => api.put(`/itineraries/${id}`, itineraryData),
-    manageCollaborators: (id, collaboratorId, action) => 
+    manageCollaborators: (id, collaboratorId, action) =>
       api.post(`/itineraries/${id}/collaborators`, { collaboratorId, action }),
     delete: (id) => api.delete(`/itineraries/${id}`)
   },
-  
+
   // 预算
   budgets: {
     getByItinerary: (itineraryId) => api.get(`/budgets/itinerary/${itineraryId}`),

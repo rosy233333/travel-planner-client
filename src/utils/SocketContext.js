@@ -23,20 +23,20 @@ export const SocketProvider = ({ children }) => {
           token
         }
       });
-      
+
       // 设置Socket事件监听器
       socketInstance.on('connect', () => {
         console.log('Socket connected, ID:', socketInstance.id);
       });
-      
+
       socketInstance.on('disconnect', () => {
         console.log('Socket disconnected');
       });
-      
+
       socketInstance.on('error', (error) => {
         console.error('Socket error:', error);
       });
-      
+
       socketInstance.on('user-joined', (data) => {
         setActiveUsers(prev => ({
           ...prev,
@@ -49,22 +49,22 @@ export const SocketProvider = ({ children }) => {
           }
         }));
       });
-      
+
       socketInstance.on('user-left', (data) => {
         setActiveUsers(prev => {
           const updatedRoom = { ...prev[data.roomId] };
           delete updatedRoom[data.userId];
-          
+
           return {
             ...prev,
             [data.roomId]: updatedRoom
           };
         });
       });
-      
+
       // 保存Socket实例
       setSocket(socketInstance);
-      
+
       // 清理函数
       return () => {
         if (socketInstance) {
