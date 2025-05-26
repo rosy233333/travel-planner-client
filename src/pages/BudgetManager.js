@@ -423,8 +423,7 @@ const BudgetManager = () => {
                                 label='请输入新的总预算'>
                                 <InputNumber
                                   min={0}
-                                  formatter={value => `¥ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                                  parser={value => value.replace(/\¥\s?|(,*)/g, '')}
+                                  prefix="￥"
                                 />
                               </Form.Item>
                             </Form>

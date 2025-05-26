@@ -36,4 +36,11 @@ export const TestItinerary = {
         "name": "测试清单项目",
         "checked": "false",
     },],
+    "preferences": {
+        "pacePreference": "relaxed",
+        "accommodationType": "budget",
+        "transportationType": "public",
+        "activityPreferences": ["sightseeing", "culture"],
+        "specialRequirements": "测试需求",
+    },
 }
