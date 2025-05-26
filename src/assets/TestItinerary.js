@@ -18,8 +18,8 @@ export const TestItinerary = {
         "date": "2025-05-25",
         "activities": [{
             "title": "测试活动",
-            "timeStart": "2025-05-25 00:00",
-            "timeEnd": "2025-05-25 23:59",
+            "timeStart": "00:00",
+            "timeEnd": "23:59",
             "location": "测试地点",
             "description": "测试活动描述",
         },],
