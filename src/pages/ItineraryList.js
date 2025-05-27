@@ -12,7 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { apiService } from '../utils/api';
 import { useAuth } from '../utils/AuthContext';
 import { TestItinerary } from '../assets/TestItinerary';
-import { getDestinationsInItineraries } from '../utils/getDestinationsInItinerary';
+import { getDestinationsInItineraries } from '../utils/getDestinationsItIninerary';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;

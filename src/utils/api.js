@@ -55,10 +55,10 @@ api.interceptors.response.use(
 const apiService = {
   // 用户认证
   auth: {
-    login: (credentials) => api.post('/auth/login', credentials),
-    register: (userData) => api.post('/auth/register', userData),
-    getCurrentUser: () => api.get('/auth/me'),
-    updatePreferences: (preferences) => api.put('/auth/preferences', { preferences })
+    login: (credentials) => api.post('/account/login', credentials),
+    register: (userData) => api.post('/account/register', userData),
+    getCurrentUser: () => api.get('/account/me'),
+    updatePreferences: (preferences) => api.put('/account/preferences', { preferences })
   },
 
   // 目的地
@@ -85,10 +85,11 @@ const apiService = {
 
   // 预算
   budgets: {
-    getByItinerary: (itineraryId) => api.get(`/budgets/${itineraryId}`),
-    createOrUpdate: (itineraryId, budgetData) => api.post(`/budgets/${itineraryId}`, budgetData),
-    addExpense: (itineraryId, expenseData) => api.post(`/budgets/expense/${itineraryId}`, expenseData),
-    deleteExpense: (itineraryId, expenseId) => api.delete(`/budgets/expense/${itineraryId}/${expenseId}`),
+    getByItinerary: (itineraryId) => api.get(`/budgets/itinerary/${itineraryId}`),
+    createOrUpdate: (itineraryId, budgetData) => api.post(`/budgets/itinerary/${itineraryId}`, budgetData),
+    addExpense: (budgetId, expenseData) => api.post(`/budgets/expense/${budgetId}`, expenseData),
+    deleteExpense: (budgetId, expenseId) => api.delete(`/budgets/expense/${budgetId}/${expenseId}`),
+    getExpenses: (budgetId) => api.get(`/budgets/expenses/${budgetId}`)
   }
 };
 

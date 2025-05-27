@@ -26,7 +26,7 @@ export const AuthProvider = ({ children }) => {
           axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
           
           // 获取用户信息
-          const response = await api.get('/auth/me');
+          const response = await api.get('/account/me');
           setUser(response.data.user);
         } catch (error) {
           console.error('身份验证错误:', error);
@@ -76,11 +76,24 @@ export const AuthProvider = ({ children }) => {
         
         message.success('登录成功');
         return { success: true };
-      } else {
-        // 登录失败
-        message.error('邮箱或密码不正确');
-        return { success: false, error: '邮箱或密码不正确' };
       }
+
+      // 如果不是测试用户，则调用实际的API
+      const response = await api.post('/account/login', { email, password });
+      const { token: newToken, user: userData } = response.data;
+      
+      // 保存到本地存储
+      localStorage.setItem('token', newToken);
+      
+      // 设置请求头
+      axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+      
+      // 更新状态
+      setToken(newToken);
+      setUser(userData);
+      
+      message.success('登录成功');
+      return { success: true };
     } catch (error) {
       const errorMsg = error.response?.data?.message || '登录失败，请检查邮箱和密码';
       message.error(errorMsg);
@@ -96,19 +109,10 @@ export const AuthProvider = ({ children }) => {
         message.error('用户名或邮箱已被使用');
         return { success: false, error: '用户名或邮箱已被使用' };
       }
-      
-      // 创建模拟的用户数据和令牌
-      const userData = {
-        id: 'user2',
-        username,
-        email,
-        preferences: {
-          travelStyle: '休闲',
-          budgetLevel: '中等'
-        }
-      };
-      
-      const newToken = 'fake-jwt-token-123456';
+
+      // 调用实际的API
+      const response = await api.post('/account/register', { username, email, password });
+      const { token: newToken, user: userData } = response.data;
       
       // 保存到本地存储
       localStorage.setItem('token', newToken);
@@ -147,7 +151,7 @@ export const AuthProvider = ({ children }) => {
   // 更新用户信息
   const updateUserProfile = async (profileData) => {
     try {
-      const response = await api.put('/auth/profile', profileData);
+      const response = await api.put('/account/profile', profileData);
       setUser(response.data.user);
       message.success('个人资料已更新');
       return { success: true };
@@ -161,7 +165,7 @@ export const AuthProvider = ({ children }) => {
   // 更新用户偏好
   const updateUserPreferences = async (preferences) => {
     try {
-      const response = await api.put('/auth/preferences', { preferences });
+      const response = await api.put('/account/preferences', { preferences });
       setUser({ ...user, preferences: response.data.preferences });
       message.success('偏好设置已更新');
       return { success: true };
@@ -190,4 +194,4 @@ export const AuthProvider = ({ children }) => {
       {children}
     </AuthContext.Provider>
   );
-}; 
+};
