@@ -12,6 +12,7 @@
 ## 技术栈
 
 ### 前端
+
 - React
 - React Router
 - Ant Design
@@ -19,6 +20,7 @@
 - Socket.io Client
 
 ### 后端
+
 - Node.js
 - Express
 - MongoDB (Mongoose)
@@ -29,10 +31,11 @@
 ## 安装和运行
 
 ### 先决条件
+
 - Node.js (v14+)
-- MongoDB
 
 ### 后端服务
+
 ```bash
 # 进入后端目录
 cd server
@@ -49,6 +52,7 @@ npm run dev
 ```
 
 ### 前端应用
+
 ```bash
 # 进入前端目录
 cd client
@@ -57,8 +61,7 @@ cd client
 npm install
 
 # 配置环境变量
-# 复制.env.example文件为.env，并填写必要的配置项
-cp .env.example .env
+# 在.env文件中修改REACT_APP_API_URL项为后端地址
 
 # 启动开发服务器
 npm start
@@ -91,12 +94,14 @@ travel-planner/
 ## API端点
 
 ### 认证
+
 - `POST /api/auth/register` - 注册新用户
 - `POST /api/auth/login` - 用户登录
 - `GET /api/auth/me` - 获取当前用户信息
 - `PUT /api/auth/preferences` - 更新用户偏好
 
 ### 目的地
+
 - `GET /api/destinations` - 获取所有目的地
 - `POST /api/destinations/recommendations` - 获取推荐目的地
 - `GET /api/destinations/:id` - 获取单个目的地
@@ -105,6 +110,7 @@ travel-planner/
 - `DELETE /api/destinations/:id` - 删除目的地
 
 ### 行程
+
 - `GET /api/itineraries` - 获取用户的所有行程
 - `GET /api/itineraries/:id` - 获取单个行程
 - `POST /api/itineraries/generate` - 生成行程
@@ -114,6 +120,7 @@ travel-planner/
 - `DELETE /api/itineraries/:id` - 删除行程
 
 ### 预算
+
 - `GET /api/budgets/itinerary/:itineraryId` - 获取行程预算
 - `POST /api/budgets/itinerary/:itineraryId` - 创建/更新行程预算
 - `POST /api/budgets/:id/expenses` - 添加费用
@@ -127,7 +134,9 @@ travel-planner/
 - `itinerary-update` - 行程更新通知
 
 ## 贡献
+
 欢迎贡献代码和提出问题！
 
 ## 许可证
-MIT 
+
+MIT
