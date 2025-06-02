@@ -13,6 +13,9 @@ import {
 } from '@ant-design/icons';
 import moment from 'moment';
 import { apiService } from '../utils/api';
+import { TestItinerary } from '../assets/TestItinerary'
+import { TestBudget } from '../assets/TestBudget';
+import FormItem from 'antd/es/form/FormItem';
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -32,9 +35,11 @@ const BudgetManager = () => {
   const { itineraryId } = useParams();
   const navigate = useNavigate();
   const [form] = Form.useForm();
+  const [form1] = Form.useForm();
   const [loading, setLoading] = useState(true);
   const [itinerary, setItinerary] = useState(null);
   const [budget, setBudget] = useState(null);
+  const [tempTotalBudget, setTempTotalBudget] = useState(0);
   const [expenses, setExpenses] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [expenseModalMode, setExpenseModalMode] = useState('add'); // 'add' or 'edit'
@@ -49,30 +54,43 @@ const BudgetManager = () => {
   const fetchItineraryAndBudget = async () => {
     try {
       setLoading(true);
-      
+
       // 获取行程信息
-      const itineraryResponse = await apiService.itineraries.getById(itineraryId);
-      setItinerary(itineraryResponse.data.itinerary);
-      
-      // 获取预算信息
-      const budgetResponse = await apiService.budgets.getByItinerary(itineraryId);
-      
-      if (budgetResponse.data.budget) {
-        setBudget(budgetResponse.data.budget);
-        setExpenses(budgetResponse.data.budget.expenses || []);
-        
-        // 计算各类别统计信息
-        calculateCategoryStats(budgetResponse.data.budget.expenses || []);
-      } else {
-        // 如果还没有预算，初始化一个空预算对象
-        setBudget({
-          itineraryId,
-          totalBudget: itineraryResponse.data.itinerary.totalBudget || 0,
-          expenses: []
-        });
-        setExpenses([]);
-        setCategoryStats([]);
+      try {
+        const itineraryResponse = await apiService.itineraries.getById(itineraryId);
+        setItinerary(itineraryResponse.data.itinerary);
+      } catch (error) {
+        console.error('获取行程信息失败:', error);
+        message.error('获取行程信息失败');
+        setItinerary(TestItinerary);
       }
+
+      // 获取预算信息
+      var budget_ = {};
+      try {
+        const budgetResponse = await apiService.budgets.getByItinerary(itineraryId);
+        if (budgetResponse.data.budget) {
+          budget_ = budgetResponse.data.budget;
+        } else {
+          // 如果还没有预算，创建一个空预算对象
+          budget_ = {
+            totalBudget: itinerary.totalBudget || 0,
+            expenses: []
+          };
+          await apiService.budgets.createOrUpdate(itineraryId, budget_);
+        }
+      } catch (error) {
+        console.error('获取预算信息失败:', error);
+        message.error('获取预算信息失败');
+        budget_ = TestBudget;
+      }
+      setBudget(budget_)
+
+      const expenses_ = budget_.expenses || [];
+      setExpenses(expenses_);
+      // 计算各类别统计信息
+      calculateCategoryStats(expenses_);
+
     } catch (error) {
       console.error('获取行程和预算信息失败:', error);
       message.error('获取预算信息失败');
@@ -82,30 +100,35 @@ const BudgetManager = () => {
   };
 
   const calculateCategoryStats = (expenseList) => {
-    const stats = {};
-    
-    // 初始化所有类别
-    categoryOptions.forEach(category => {
-      stats[category.value] = {
-        category: category.value,
-        categoryLabel: category.label,
-        color: category.color,
-        amount: 0,
-        count: 0
-      };
-    });
-    
-    // 累计各类别金额
-    expenseList.forEach(expense => {
-      if (stats[expense.category]) {
-        stats[expense.category].amount += expense.amount;
-        stats[expense.category].count += 1;
-      }
-    });
-    
-    // 转换为数组
-    const statsArray = Object.values(stats).filter(item => item.amount > 0);
-    setCategoryStats(statsArray);
+    if (expenseList.length > 0) {
+      const stats = {};
+
+      // 初始化所有类别
+      categoryOptions.forEach(category => {
+        stats[category.value] = {
+          category: category.value,
+          categoryLabel: category.label,
+          color: category.color,
+          amount: 0,
+          count: 0
+        };
+      });
+
+      // 累计各类别金额
+      expenseList.forEach(expense => {
+        if (stats[expense.category]) {
+          stats[expense.category].amount += expense.amount;
+          stats[expense.category].count += 1;
+        }
+      });
+
+      // 转换为数组
+      const statsArray = Object.values(stats).filter(item => item.amount > 0);
+      setCategoryStats(statsArray);
+    }
+    else {
+      setCategoryStats([]);
+    }
   };
 
   const showAddExpenseModal = () => {
@@ -118,7 +141,7 @@ const BudgetManager = () => {
   const showEditExpenseModal = (expense) => {
     setExpenseModalMode('edit');
     setCurrentExpense(expense);
-    
+
     form.setFieldsValue({
       title: expense.title,
       amount: expense.amount,
@@ -126,7 +149,7 @@ const BudgetManager = () => {
       date: expense.date ? moment(expense.date) : null,
       description: expense.description
     });
-    
+
     setModalVisible(true);
   };
 
@@ -138,50 +161,50 @@ const BudgetManager = () => {
   const handleModalOk = async () => {
     try {
       const values = await form.validateFields();
-      
-      const expenseData = {
+      var expenseData = {
         title: values.title,
         amount: values.amount,
         category: values.category,
-        date: values.date?.format('YYYY-MM-DD'),
         description: values.description
       };
-      
+      if (values.date) {
+        expenseData = {
+          ...expenseData,
+          date: values.date?.format('YYYY-MM-DD'),
+        }
+      }
+      else {
+        expenseData = {
+          ...expenseData,
+          date: moment().format('YYYY-MM-DD'),
+        }
+      }
+
+
       if (expenseModalMode === 'add') {
         // 添加新支出
-        if (!budget._id) {
-          // 如果预算还不存在，先创建预算
-          await apiService.budgets.createOrUpdate(itineraryId, {
-            totalBudget: itinerary.totalBudget || 0,
-            expenses: [expenseData]
-          });
-        } else {
-          // 向现有预算添加支出
-          await apiService.budgets.addExpense(budget._id, expenseData);
-        }
-        
+        await apiService.budgets.addExpense(itineraryId, expenseData);
         message.success('支出记录添加成功');
       } else {
         // 编辑现有支出
         // 首先移除旧支出
         const updatedExpenses = expenses.filter(exp => exp._id !== currentExpense._id);
-        
+
         // 然后添加编辑后的支出
         updatedExpenses.push({
           ...currentExpense,
           ...expenseData
         });
-        
+
         // 更新预算
         await apiService.budgets.createOrUpdate(itineraryId, {
-          _id: budget._id,
           totalBudget: budget.totalBudget,
           expenses: updatedExpenses
         });
-        
+
         message.success('支出记录更新成功');
       }
-      
+
       setModalVisible(false);
       form.resetFields();
       fetchItineraryAndBudget(); // 重新获取预算信息
@@ -193,7 +216,7 @@ const BudgetManager = () => {
 
   const handleDeleteExpense = async (expense) => {
     try {
-      await apiService.budgets.deleteExpense(budget._id, expense._id);
+      await apiService.budgets.deleteExpense(itineraryId, expense._id);
       message.success('支出记录删除成功');
       fetchItineraryAndBudget(); // 重新获取预算信息
     } catch (error) {
@@ -202,21 +225,21 @@ const BudgetManager = () => {
     }
   };
 
-  const handleUpdateBudget = async (newTotalBudget) => {
+  const handleUpdateBudget = async () => {
     try {
       setSavingBudget(true);
-      
+      const newTotalBudget = form1.getFieldValue('totalBudget');
+
       await apiService.budgets.createOrUpdate(itineraryId, {
-        _id: budget?._id,
         totalBudget: newTotalBudget,
         expenses: expenses
       });
-      
+
       // 同时更新行程中的总预算
       await apiService.itineraries.update(itineraryId, {
         totalBudget: newTotalBudget
       });
-      
+
       message.success('预算金额更新成功');
       fetchItineraryAndBudget(); // 重新获取预算信息
     } catch (error) {
@@ -243,7 +266,7 @@ const BudgetManager = () => {
   const getBudgetPercentage = () => {
     const totalBudget = budget?.totalBudget || 0;
     if (totalBudget === 0) return 0;
-    
+
     const totalExpenses = getTotalExpenses();
     return Math.min(Math.round((totalExpenses / totalBudget) * 100), 100);
   };
@@ -366,12 +389,12 @@ const BudgetManager = () => {
       >
         返回行程详情
       </Button>
-      
+
       <div className="budget-header" style={{ marginBottom: 24 }}>
         <Title level={2}>预算管理: {itinerary.title}</Title>
         <Text type="secondary">管理和跟踪您的行程支出</Text>
       </div>
-      
+
       <Row gutter={[24, 24]}>
         <Col xs={24} lg={8}>
           <Card>
@@ -387,20 +410,27 @@ const BudgetManager = () => {
                       type="link"
                       icon={<EditOutlined />}
                       onClick={() => {
+                        form1.setFieldValue('totalBudget', budget.totalBudget)
                         confirm({
                           title: '修改总预算',
                           content: (
-                            <InputNumber
-                              style={{ width: '100%' }}
-                              min={0}
-                              defaultValue={budget.totalBudget}
-                              formatter={value => `¥ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                              parser={value => value.replace(/\¥\s?|(,*)/g, '')}
-                              onChange={(value) => handleUpdateBudget(value)}
-                            />
+                            <Form
+                              form={form1}
+                              onFinish={handleUpdateBudget}
+                            >
+                              <Form.Item
+                                name='totalBudget'
+                                label='请输入新的总预算'>
+                                <InputNumber
+                                  min={0}
+                                  prefix="￥"
+                                />
+                              </Form.Item>
+                            </Form>
                           ),
                           okText: '确定',
                           cancelText: '取消',
+                          onOk: form1.submit,
                         });
                       }}
                     >
@@ -409,7 +439,7 @@ const BudgetManager = () => {
                   }
                 />
               </Col>
-              
+
               <Col span={24}>
                 <Statistic
                   title="已用预算"
@@ -419,7 +449,7 @@ const BudgetManager = () => {
                   valueStyle={{ color: totalExpenses > budget.totalBudget ? '#ff4d4f' : '#3f8600' }}
                 />
               </Col>
-              
+
               <Col span={24}>
                 <Statistic
                   title="剩余预算"
@@ -429,21 +459,21 @@ const BudgetManager = () => {
                   valueStyle={{ color: remainingBudget < 0 ? '#ff4d4f' : '#3f8600' }}
                 />
               </Col>
-              
+
               <Col span={24}>
                 <div style={{ marginTop: 16 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Text>预算使用</Text>
                     <Text>{budgetPercentage}%</Text>
                   </div>
-                  <Progress 
-                    percent={budgetPercentage} 
-                    status={progressStatus} 
+                  <Progress
+                    percent={budgetPercentage}
+                    status={progressStatus}
                     showInfo={false}
                   />
                 </div>
               </Col>
-              
+
               {remainingBudget < 0 && (
                 <Col span={24}>
                   <div style={{ backgroundColor: '#fff2f0', padding: 16, borderRadius: 4, marginTop: 16 }}>
@@ -454,44 +484,41 @@ const BudgetManager = () => {
               )}
             </Row>
           </Card>
-          
-          {categoryStats.length > 0 && (
-            <Card title="支出分类统计" style={{ marginTop: 24 }}>
-              <div style={{ height: 200 }}>
-                <Pie
-                  data={categoryStats.map(stat => ({
-                    type: stat.categoryLabel,
-                    value: stat.amount
-                  }))}
-                  angleField="value"
-                  colorField="type"
-                  radius={0.8}
-                  label={{
-                    type: 'inner',
-                    offset: '-30%',
-                    content: '{percentage}'
-                  }}
-                  interactions={[{ type: 'element-active' }]}
-                />
-              </div>
-              
-              <Divider style={{ margin: '24px 0 16px' }} />
-              
-              <ul style={{ padding: 0, listStyle: 'none' }}>
-                {categoryStats.map((stat) => (
-                  <li key={stat.category} style={{ marginBottom: 8, display: 'flex', justifyContent: 'space-between' }}>
-                    <div>
-                      <Tag color={stat.color}>{stat.categoryLabel}</Tag>
-                      <Text>{stat.count}笔</Text>
-                    </div>
-                    <Text strong>¥{stat.amount.toFixed(2)}</Text>
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          )}
-        </Col>
-        
+
+          {
+            categoryStats.length > 0 && (
+              <Card title="支出分类统计" style={{ marginTop: 24 }}>
+                <div style={{ height: 200 }}>
+                  <Pie
+                    data={categoryStats.map(stat => ({
+                      type: stat.categoryLabel,
+                      value: stat.amount
+                    }))}
+                    angleField="value"
+                    colorField="type"
+                    radius={0.8}
+                    interactions={[{ type: 'element-active' }]}
+                  />
+                </div>
+
+                <Divider style={{ margin: '24px 0 16px' }} />
+
+                <ul style={{ padding: 0, listStyle: 'none' }}>
+                  {categoryStats.map((stat) => (
+                    <li key={stat.category} style={{ marginBottom: 8, display: 'flex', justifyContent: 'space-between' }}>
+                      <div>
+                        <Tag color={stat.color}>{stat.categoryLabel}</Tag>
+                        <Text>{stat.count}笔</Text>
+                      </div>
+                      <Text strong>¥{stat.amount.toFixed(2)}</Text>
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            )
+          }
+        </Col >
+
         <Col xs={24} lg={16}>
           <Card
             title="支出记录"
@@ -513,10 +540,10 @@ const BudgetManager = () => {
             />
           </Card>
         </Col>
-      </Row>
-      
+      </Row >
+
       {/* 添加/编辑支出的模态框 */}
-      <Modal
+      < Modal
         title={expenseModalMode === 'add' ? '添加支出' : '编辑支出'}
         visible={modalVisible}
         onOk={handleModalOk}
@@ -535,7 +562,7 @@ const BudgetManager = () => {
           >
             <Input placeholder="例如：酒店住宿、餐饮费用等" />
           </Form.Item>
-          
+
           <Form.Item
             name="amount"
             label="金额"
@@ -550,7 +577,7 @@ const BudgetManager = () => {
               placeholder="例如：299.99"
             />
           </Form.Item>
-          
+
           <Form.Item
             name="category"
             label="类别"
@@ -564,14 +591,14 @@ const BudgetManager = () => {
               ))}
             </Select>
           </Form.Item>
-          
+
           <Form.Item
             name="date"
             label="日期"
           >
             <DatePicker style={{ width: '100%' }} />
           </Form.Item>
-          
+
           <Form.Item
             name="description"
             label="备注"
@@ -579,8 +606,8 @@ const BudgetManager = () => {
             <Input.TextArea rows={3} placeholder="添加支出备注信息..." />
           </Form.Item>
         </Form>
-      </Modal>
-    </div>
+      </Modal >
+    </div >
   );
 };
 

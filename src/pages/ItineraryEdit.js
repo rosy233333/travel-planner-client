@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   Form, Input, DatePicker, InputNumber, Select, Button,
   Card, Typography, message, Spin, Tabs, Row, Col,
-  Divider, List, Timeline, Modal, Space, Avatar, Tag, Empty, Switch
+  Divider, List, Timeline, Modal, Space, Avatar, Tag, Empty, Switch, TimePicker
 } from 'antd';
 import {
   CalendarOutlined, EditOutlined, DeleteOutlined, PlusOutlined,
@@ -15,6 +15,7 @@ import { apiService } from '../utils/api';
 import { useAuth } from '../utils/AuthContext';
 import { TestItinerary } from '../assets/TestItinerary';
 import { TestDestinations } from '../assets/TestDestinations';
+import { getDestinationsInItinerary } from '../utils/getDestinationsInItinerary';
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -41,6 +42,7 @@ const ItineraryEdit = () => {
   const [collaboratorModalVisible, setCollaboratorModalVisible] = useState(false);
   const [userEmail, setUserEmail] = useState('');
   const [collaborators, setCollaborators] = useState([]);
+  const [activityTimeRange, setActivityTimeRange] = useState([]);
 
   useEffect(() => {
     fetchItineraryDetail();
@@ -50,49 +52,44 @@ const ItineraryEdit = () => {
   const fetchItineraryDetail = async () => {
     try {
       setLoading(true);
-      let itineraryData;
-      
+      var itinerary_;
       try {
         const response = await apiService.itineraries.getById(id);
-        if (!response.data || !response.data.itinerary) {
-          throw new Error('Invalid response format');
-        }
-        itineraryData = response.data.itinerary;
+        itinerary_ = getDestinationsInItinerary(response.data.itinerary);
       } catch (error) {
-        console.error('获取行程详情失败，使用测试数据:', error);
-        itineraryData = TestItinerary;
+        itinerary_ = TestItinerary;
       }
+      setItinerary(itinerary_)
 
-      // 设置行程数据
-      setItinerary(itineraryData);
-      setCollaborators(itineraryData.collaborators || []);
+      setCollaborators(itinerary_.collaborators || []);
 
       // 设置表单值
       form.setFieldsValue({
-        title: itineraryData.title,
-        destinations: itineraryData.destinations?.map(d => d.id || d),
+        title: itinerary_.title,
+        destinations: itinerary_.destinations,
         dateRange: [
-          moment(itineraryData.startDate),
-          moment(itineraryData.endDate)
+          moment(itinerary_.startDate),
+          moment(itinerary_.endDate)
         ],
-        duration: itineraryData.duration,
-        totalBudget: itineraryData.totalBudget,
-        description: itineraryData.description,
-        isShared: itineraryData.isShared,
-        pacePreference: itineraryData.preferences?.pacePreference,
-        accommodationType: itineraryData.preferences?.accommodationType,
-        transportationType: itineraryData.preferences?.transportationType,
-        activityPreferences: itineraryData.preferences?.activityPreferences,
-        specialRequirements: itineraryData.preferences?.specialRequirements
+        duration: itinerary_.duration,
+        totalBudget: itinerary_.totalBudget,
+        description: itinerary_.description,
+        isShared: itinerary_.isShared,
+        pacePreference: itinerary_.preferences?.pacePreference,
+        accommodationType: itinerary_.preferences?.accommodationType,
+        transportationType: itinerary_.preferences?.transportationType,
+        activityPreferences: itinerary_.preferences?.activityPreferences,
+        specialRequirements: itinerary_.preferences?.specialRequirements
       });
 
       // 设置已选择的目的地
-      if (itineraryData.destinations && itineraryData.destinations.length > 0) {
-        setSelectedDestinations(itineraryData.destinations);
+      if (itinerary_.destinations && itinerary_.destinations.length > 0) {
+        setSelectedDestinations(itinerary_.destinations);
       }
     } catch (error) {
-      console.error('处理行程数据失败:', error);
+      console.error('获取行程详情失败:', error);
       message.error('获取行程详情失败');
+
     } finally {
       setLoading(false);
     }
@@ -101,7 +98,7 @@ const ItineraryEdit = () => {
   const fetchDestinations = async () => {
     try {
       const response = await apiService.destinations.getAll();
-      setDestinations(response.data.destinations);
+      setDestinations(response.data.destinations_data);
     } catch (error) {
       console.error('获取目的地列表失败:', error);
       message.error('获取目的地列表失败');
@@ -155,10 +152,7 @@ const ItineraryEdit = () => {
           transportationType: values.transportationType,
           activityPreferences: values.activityPreferences,
           specialRequirements: values.specialRequirements
-        },
-        itineraryDays: itinerary?.itineraryDays || [],
-        collaborators: itinerary?.collaborators || [],
-        checklist: itinerary?.checklist || []
+        }
       };
 
       await apiService.itineraries.update(id, itineraryData);
@@ -184,15 +178,16 @@ const ItineraryEdit = () => {
   const showEditActivityModal = (day, activity) => {
     setCurrentDay(day);
     setCurrentActivity(activity);
+    // setActivityTimeRange([moment(activity.timeStart, 'HH:mm'), moment(activity.timeEnd, "HH:mm")]);
 
     activityForm.setFieldsValue({
       title: activity.title,
-      timeStart: activity.timeStart,
-      timeEnd: activity.timeEnd,
+      time: [moment(activity.timeStart, 'HH:mm'), moment(activity.timeEnd, "HH:mm")],
       location: activity.location,
       description: activity.description
     });
 
+    console.log(activityTimeRange);
     setActivityModalVisible(true);
   };
 
@@ -227,10 +222,13 @@ const ItineraryEdit = () => {
       }
 
       // 创建或更新活动
+      console.log(activityTimeRange);
       const activity = {
         title: values.title,
-        timeStart: values.timeStart,
-        timeEnd: values.timeEnd,
+        // timeStart: activityTimeRange[0].format("HH:mm"),
+        // timeEnd: activityTimeRange[1].format("HH:mm"),
+        timeStart: values.time[0].format("HH:mm"),
+        timeEnd: values.time[1].format("HH:mm"),
         location: values.location,
         description: values.description
       };
@@ -748,24 +746,22 @@ const ItineraryEdit = () => {
             <Input placeholder="例如：参观博物馆" />
           </Form.Item>
 
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="timeStart"
-                label="开始时间"
-              >
-                <Input placeholder="例如：08:00" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="timeEnd"
-                label="结束时间"
-              >
-                <Input placeholder="例如：12:00" />
-              </Form.Item>
-            </Col>
-          </Row>
+          <Form.Item
+            name="time"
+            label="活动时间"
+          >
+            <TimePicker.RangePicker
+              format="HH:mm"
+              placeholder={["开始时间", "结束时间"]}
+              style={{
+                width: '100%'
+              }}
+            // value={[activityTimeRange[0], activityTimeRange[1]]}
+            // onChange={(time) => {
+            //   setActivityTimeRange([time[0], time[1]])
+            // }}
+            />
+          </Form.Item>
 
           <Form.Item
             name="location"

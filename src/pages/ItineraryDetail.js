@@ -15,7 +15,7 @@ import {
 import { apiService } from '../utils/api';
 import { useAuth } from '../utils/AuthContext';
 import { TestItinerary } from '../assets/TestItinerary';
-import { getDestinationsInItinerary } from '../utils/getDestinationsItIninerary';
+import { getDestinationsInItinerary } from '../utils/getDestinationsInItinerary';
 
 const { Title, Text, Paragraph } = Typography;
 const { TabPane } = Tabs;

@@ -85,11 +85,10 @@ const apiService = {
 
   // 预算
   budgets: {
-    getByItinerary: (itineraryId) => api.get(`/budgets/itinerary/${itineraryId}`),
-    createOrUpdate: (itineraryId, budgetData) => api.post(`/budgets/itinerary/${itineraryId}`, budgetData),
-    addExpense: (budgetId, expenseData) => api.post(`/budgets/expense/${budgetId}`, expenseData),
-    deleteExpense: (budgetId, expenseId) => api.delete(`/budgets/expense/${budgetId}/${expenseId}`),
-    getExpenses: (budgetId) => api.get(`/budgets/expenses/${budgetId}`)
+    getByItinerary: (itineraryId) => api.get(`/budgets/${itineraryId}`),
+    createOrUpdate: (itineraryId, budgetData) => api.post(`/budgets/${itineraryId}`, budgetData),
+    addExpense: (itineraryId, expenseData) => api.post(`/budgets/expense/${itineraryId}`, expenseData),
+    deleteExpense: (itineraryId, expenseId) => api.delete(`/budgets/expense/${itineraryId}/${expenseId}`),
   }
 };
 
