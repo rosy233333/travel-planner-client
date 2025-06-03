@@ -83,10 +83,10 @@ const ItineraryEdit = () => {
         specialRequirements: itinerary_.preferences?.specialRequirements
       });
 
-      // 设置已选择的目的地
-      if (itinerary_.destinations && itinerary_.destinations.length > 0) {
-        setSelectedDestinations(itinerary_.destinations);
-      }
+      // // 设置已选择的目的地
+      // if (itinerary_.destinations && itinerary_.destinations.length > 0) {
+      //   setSelectedDestinations(itinerary_.destinations);
+      // }
     } catch (error) {
       console.error('获取行程详情失败:', error);
       message.error('获取行程详情失败');
@@ -107,10 +107,10 @@ const ItineraryEdit = () => {
     }
   };
 
-  const handleDestinationChange = (selectedIds) => {
-    const selected = destinations.filter(d => selectedIds.includes(d.id));
-    setSelectedDestinations(selected);
-  };
+  // const handleDestinationChange = (selectedIds) => {
+  //   const selected = destinations.filter(d => selectedIds.includes(d.id));
+  //   setSelectedDestinations(selected);
+  // };
 
   const handleDateRangeChange = (dates) => {
     if (dates && dates.length === 2) {
@@ -184,7 +184,7 @@ const ItineraryEdit = () => {
     activityForm.setFieldsValue({
       title: activity.title,
       time: [moment(activity.timeStart, 'HH:mm'), moment(activity.timeEnd, "HH:mm")],
-      location: activity.location,
+      location: [activity.location],
       description: activity.description
     });
 
@@ -230,7 +230,7 @@ const ItineraryEdit = () => {
         // timeEnd: activityTimeRange[1].format("HH:mm"),
         timeStart: values.time[0].format("HH:mm"),
         timeEnd: values.time[1].format("HH:mm"),
-        location: values.location,
+        location: values.location[0],
         description: values.description
       };
 
@@ -462,14 +462,14 @@ const ItineraryEdit = () => {
                     rules={[{ required: true, message: '请选择至少一个目的地' }]}
                   >
                     <Select
-                      mode="multiple"
+                      mode="tags"
                       placeholder="选择目的地"
-                      onChange={handleDestinationChange}
+                      // onChange={handleDestinationChange}
                       loading={loading}
                       optionFilterProp="children"
-                      filterOption={(input, option) =>
-                        option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
-                      }
+                    // filterOption={(input, option) =>
+                    //   option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                    // }
                     >
                       {destinations.map(destination => (
                         <Option key={destination.id} value={destination.name}>
@@ -768,7 +768,25 @@ const ItineraryEdit = () => {
             name="location"
             label="地点"
           >
-            <Input placeholder="例如：东京国立博物馆" />
+            <Select
+              mode="tags"
+              placeholder="选择活动地点"
+              // onChange={handleDestinationChange}
+              loading={loading}
+              optionFilterProp="children"
+              maxCount={1}
+            // filterOption={(input, option) =>
+            //   option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+            // }
+            >
+              {
+                destinations.map(destination => (
+                  <Option key={destination.id} value={destination.name}>
+                    {destination.name} ({destination.country}, {destination.city})
+                  </Option>
+                ))
+              }
+            </Select>
           </Form.Item>
 
           <Form.Item
@@ -808,7 +826,7 @@ const ItineraryEdit = () => {
           </Text>
         </Form>
       </Modal>
-    </div>
+    </div >
   );
 };
 

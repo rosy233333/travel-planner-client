@@ -219,14 +219,14 @@ const ItineraryCreate = () => {
               rules={[{ required: true, message: '请选择至少一个目的地' }]}
             >
               <Select
-                mode="multiple"
+                mode="tags"
                 placeholder="选择目的地"
                 onChange={handleDestinationChange}
                 loading={loading}
                 optionFilterProp="children"
-                filterOption={(input, option) =>
-                  option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
-                }
+              // filterOption={(input, option) =>
+              //   option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+              // }
               >
                 {destinations.map(destination => (
                   <Option key={destination.id} value={destination.name}>
