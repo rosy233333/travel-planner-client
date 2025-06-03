@@ -48,8 +48,9 @@ const ItineraryDetail = () => {
       setLoading(true);
       const response = await apiService.itineraries.getById(id);
       const itinerary = response.data.itinerary;
-      const itinerary_with_destinations = getDestinationsInItinerary(itinerary);
-      setItinerary(itinerary_with_destinations);
+      // const itinerary_with_destinations = getDestinationsInItinerary(itinerary);
+      // setItinerary(itinerary_with_destinations);
+      setItinerary(itinerary);
     } catch (error) {
       console.error('获取行程详情失败:', error);
       message.error('获取行程详情失败');
@@ -224,30 +225,30 @@ const ItineraryDetail = () => {
 
                 <Divider orientation="left">目的地</Divider>
 
-                {itinerary.destinations_data && itinerary.destinations_data.length > 0 ? (
+                {itinerary.destinations && itinerary.destinations.length > 0 ? (
                   <List
                     itemLayout="horizontal"
-                    dataSource={itinerary.destinations_data}
+                    dataSource={itinerary.destinations}
                     renderItem={destination => (
                       <List.Item
-                        actions={[
-                          <Button
-                            type="link"
-                            onClick={() => navigate(`/destinations/${destination.id}`)}
-                          >
-                            查看
-                          </Button>
-                        ]}
+                      // actions={[
+                      //   <Button
+                      //     type="link"
+                      //     onClick={() => navigate(`/destinations/${destination.id}`)}
+                      //   >
+                      //     查看
+                      //   </Button>
+                      // ]}
                       >
                         <List.Item.Meta
                           avatar={<Avatar icon={<EnvironmentOutlined />} style={{ backgroundColor: '#1890ff' }} />}
-                          title={destination.name}
-                          description={
-                            <>
-                              {destination.country} · {destination.city}
-                              {destination.category && <Tag color="blue" style={{ marginLeft: 8 }}>{destination.category}</Tag>}
-                            </>
-                          }
+                          title={destination}
+                        // description={
+                        //   <>
+                        //     {destination.country} · {destination.city}
+                        //     {destination.category && <Tag color="blue" style={{ marginLeft: 8 }}>{destination.category}</Tag>}
+                        //   </>
+                        // }
                         />
                       </List.Item>
                     )}

@@ -249,7 +249,7 @@ const ItineraryList = () => {
                         </div>
                         <div style={{ marginBottom: 8 }}>
                           <EnvironmentOutlined style={{ marginRight: 8 }} />
-                          <Text>{itinerary.destinations_data?.map(d => d.name).join(', ') || '未指定目的地'}</Text>
+                          <Text>{itinerary.destinations?.join(', ') || '未指定目的地'}</Text>
                         </div>
                         <div>
                           <DollarOutlined style={{ marginRight: 8 }} />

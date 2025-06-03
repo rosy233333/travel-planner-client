@@ -3,17 +3,10 @@ export const TestItinerary = {
     "startDate": "2025-05-25",
     "endDate": "2025-05-26",
     "duration": 1,
-    "title": "测试行程",
+    "title": "北京一日游",
     "isShared": true,
-    "description": "测试行程描述",
-    "destinations": [0],
-    "destinations_data": [{
-        "id": 0,
-        "name": "测试地点",
-        "country": "中国",
-        "city": "北京",
-        "category": null,
-    },],
+    "description": "北京一日游",
+    "destinations": ["故宫"],
     "itineraryDays": [{
         "date": "2025-05-25",
         "activities": [{

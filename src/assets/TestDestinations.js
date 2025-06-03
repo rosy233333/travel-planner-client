@@ -1,1 +1,1 @@
-export const TestDestinations = [{ id: 0, name: "测试地点", country: "中国", city: "北京" }]
+export const TestDestinations = [{ id: 0, name: "故宫", country: "中国", city: "北京" }]

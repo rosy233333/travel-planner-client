@@ -229,7 +229,7 @@ const ItineraryCreate = () => {
                 }
               >
                 {destinations.map(destination => (
-                  <Option key={destination.id} value={destination.id}>
+                  <Option key={destination.id} value={destination.name}>
                     {destination.name} ({destination.country}, {destination.city})
                   </Option>
                 ))}

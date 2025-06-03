@@ -55,7 +55,8 @@ const ItineraryEdit = () => {
       var itinerary_;
       try {
         const response = await apiService.itineraries.getById(id);
-        itinerary_ = getDestinationsInItinerary(response.data.itinerary);
+        // itinerary_ = getDestinationsInItinerary(response.data.itinerary);
+        itinerary_ = response.data.itinerary;
       } catch (error) {
         itinerary_ = TestItinerary;
       }
@@ -471,7 +472,7 @@ const ItineraryEdit = () => {
                       }
                     >
                       {destinations.map(destination => (
-                        <Option key={destination.id} value={destination.id}>
+                        <Option key={destination.id} value={destination.name}>
                           {destination.name} ({destination.country}, {destination.city})
                         </Option>
                       ))}
