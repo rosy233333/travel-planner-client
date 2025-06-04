@@ -64,11 +64,11 @@ const Navbar = () => {
             <Menu.Item key="1" icon={<HomeOutlined />}>
               <Link to="/dashboard">首页</Link>
             </Menu.Item>
-            <Menu.Item key="2" icon={<CompassOutlined />}>
-              <Link to="/destinations">目的地</Link>
-            </Menu.Item>
             <Menu.Item key="3" icon={<CarOutlined />}>
               <Link to="/itineraries">行程</Link>
+            </Menu.Item>
+            <Menu.Item key="2" icon={<CompassOutlined />}>
+              <Link to="/destinations">发现</Link>
             </Menu.Item>
           </Menu>
         )}
@@ -126,11 +126,11 @@ const Navbar = () => {
             <Menu.Item key="1" icon={<HomeOutlined />}>
               <Link to="/dashboard">首页</Link>
             </Menu.Item>
-            <Menu.Item key="2" icon={<CompassOutlined />}>
-              <Link to="/destinations">目的地</Link>
-            </Menu.Item>
             <Menu.Item key="3" icon={<CarOutlined />}>
               <Link to="/itineraries">行程</Link>
+            </Menu.Item>
+            <Menu.Item key="2" icon={<CompassOutlined />}>
+              <Link to="/destinations">发现</Link>
             </Menu.Item>
             <Menu.Item key="4" icon={<WalletOutlined />}>
               <Link to="/profile">个人资料</Link>

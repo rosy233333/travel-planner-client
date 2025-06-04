@@ -55,45 +55,6 @@ const Dashboard = () => {
       </div>
 
       <Row gutter={[24, 24]}>
-        {/* 推荐目的地 */}
-        <Col span={24}>
-          <Card 
-            title="推荐目的地" 
-            extra={<Button type="link" onClick={() => navigate('/destinations')}>查看全部</Button>}
-          >
-            {recommendedDestinations.length > 0 ? (
-              <Row gutter={[16, 16]}>
-                {recommendedDestinations.map(destination => (
-                  <Col key={destination.name} xs={24} sm={12} md={8}>
-                    <Card
-                      hoverable
-                      cover={<div style={{ height: 150, background: '#f0f2f5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{destination.name}</div>}
-                      onClick={() => navigate(`/destinations/${destination.id}`)}
-                    >
-                      <Card.Meta
-                        title={destination.name}
-                        description={
-                          <>
-                            <div>{destination.country} · {destination.city}</div>
-                            <div style={{ marginTop: 8 }}>
-                              <Tag color="blue">{destination.category}</Tag>
-                              <Tag color="green">¥{destination.averageCost}/人</Tag>
-                            </div>
-                          </>
-                        }
-                      />
-                    </Card>
-                  </Col>
-                ))}
-              </Row>
-            ) : (
-              <div style={{ textAlign: 'center', padding: '20px' }}>
-                <Text type="secondary">暂无推荐目的地</Text>
-              </div>
-            )}
-          </Card>
-        </Col>
-
         {/* 最近行程 */}
         <Col span={24}>
           <Card 
@@ -139,10 +100,49 @@ const Dashboard = () => {
           </Card>
         </Col>
 
+        {/* 推荐目的地 */}
+        <Col span={24}>
+          <Card 
+            title="推荐目的地" 
+            extra={<Button type="link" onClick={() => navigate('/destinations')}>查看全部</Button>}
+          >
+            {recommendedDestinations.length > 0 ? (
+              <Row gutter={[16, 16]}>
+                {recommendedDestinations.map(destination => (
+                  <Col key={destination.name} xs={24} sm={12} md={8}>
+                    <Card
+                      hoverable
+                      cover={<div style={{ height: 150, background: '#f0f2f5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{destination.name}</div>}
+                      onClick={() => navigate(`/destinations/${destination.id}`)}
+                    >
+                      <Card.Meta
+                        title={destination.name}
+                        description={
+                          <>
+                            <div>{destination.country} · {destination.city}</div>
+                            <div style={{ marginTop: 8 }}>
+                              <Tag color="blue">{destination.category}</Tag>
+                              <Tag color="green">¥{destination.averageCost}/人</Tag>
+                            </div>
+                          </>
+                        }
+                      />
+                    </Card>
+                  </Col>
+                ))}
+              </Row>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '20px' }}>
+                <Text type="secondary">暂无推荐目的地</Text>
+              </div>
+            )}
+          </Card>
+        </Col>
+
         {/* 快速操作 */}
         <Col span={24}>
           <Card title="快速操作">
-            <Row gutter={[16, 16]}>
+            <Row gutter={[16, 16]} justify="center">
               <Col xs={24} sm={12} md={8} lg={6}>
                 <Button 
                   type="primary" 
@@ -159,7 +159,7 @@ const Dashboard = () => {
                   size="large"
                   onClick={() => navigate('/destinations')}
                 >
-                  浏览目的地
+                  发现
                 </Button>
               </Col>
               <Col xs={24} sm={12} md={8} lg={6}>
