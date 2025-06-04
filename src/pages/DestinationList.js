@@ -21,11 +21,30 @@ const DestinationList = () => {
   // 定义目的地类别选项
   const categories = [
     { value: 'all', label: '全部' },
-    { value: '自然景观', label: '自然景观' },
-    { value: '历史文化', label: '历史文化' },
-    { value: '休闲度假', label: '休闲度假' },
-    { value: '美食探索', label: '美食探索' },
-    { value: '冒险体验', label: '冒险体验' }
+    { value: '餐饮服务', label: '餐饮服务' },
+    { value: '道路附属设施', label: '道路附属设施' },
+    { value: '地名地址信息', label: '地名地址信息' },
+    { value: '风景名胜', label: '风景名胜' },
+    { value: '公共设施', label: '公共设施' },
+    { value: '公司企业', label: '公司企业' },
+    { value: '购物服务', label: '购物服务' },
+    { value: '交通设施服务', label: '交通设施服务' },
+    { value: '金融保险服务', label: '金融保险服务' },
+    { value: '科教文化服务', label: '科教文化服务' },
+    { value: '摩托车服务', label: '摩托车服务' },
+    { value: '汽车服务', label: '汽车服务' },
+    { value: '汽车维修', label: '汽车维修' },
+    { value: '汽车销售', label: '汽车销售' },
+    { value: '商务住宅', label: '商务住宅' },
+    { value: '生活服务', label: '生活服务' },
+    { value: '事件活动', label: '事件活动' },
+    { value: '室内设施', label: '室内设施' },
+    { value: '体育休闲服务', label: '体育休闲服务' },
+    { value: '通行设施', label: '通行设施' },
+    { value: '虚拟数据', label: '虚拟数据' },
+    { value: '医疗保健服务', label: '医疗保健服务' },
+    { value: '政府机构及社会团体', label: '政府机构及社会团体' },
+    { value: '住宿服务', label: '住宿服务' }
   ];
 
   useEffect(() => {
