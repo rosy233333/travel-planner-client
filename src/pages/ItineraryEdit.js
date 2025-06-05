@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   Form, Input, DatePicker, InputNumber, Select, Button,
   Card, Typography, message, Spin, Tabs, Row, Col,
-  Divider, List, Timeline, Modal, Space, Avatar, Tag, Empty, Switch, TimePicker
+  Divider, List, Timeline, Modal, Space, Avatar, Tag, Empty, Switch, TimePicker, AutoComplete
 } from 'antd';
 import {
   CalendarOutlined, EditOutlined, DeleteOutlined, PlusOutlined,
@@ -33,6 +33,7 @@ const ItineraryEdit = () => {
   const [saving, setSaving] = useState(false);
   const [itinerary, setItinerary] = useState(null);
   const [destinations, setDestinations] = useState([]);
+  const [searchedDestinations, setSearchedDestinations] = useState([]);
   const [selectedDestinations, setSelectedDestinations] = useState([]);
   const [activeTabKey, setActiveTabKey] = useState('basic');
   const [activityModalVisible, setActivityModalVisible] = useState(false);
@@ -99,7 +100,13 @@ const ItineraryEdit = () => {
   const fetchDestinations = async () => {
     try {
       const response = await apiService.destinations.getAll();
-      setDestinations(response.data.destinations_data);
+      if (response.data.destinations) {
+        setDestinations(response.data.destinations);
+      }
+      else {
+        throw new Error('目的地数据格式不正确');
+      }
+
     } catch (error) {
       console.error('获取目的地列表失败:', error);
       message.error('获取目的地列表失败');
@@ -184,7 +191,7 @@ const ItineraryEdit = () => {
     activityForm.setFieldsValue({
       title: activity.title,
       time: [moment(activity.timeStart, 'HH:mm'), moment(activity.timeEnd, "HH:mm")],
-      location: [activity.location],
+      location: activity.location,
       description: activity.description
     });
 
@@ -230,7 +237,7 @@ const ItineraryEdit = () => {
         // timeEnd: activityTimeRange[1].format("HH:mm"),
         timeStart: values.time[0].format("HH:mm"),
         timeEnd: values.time[1].format("HH:mm"),
-        location: values.location[0],
+        location: values.location,
         description: values.description
       };
 
@@ -459,11 +466,11 @@ const ItineraryEdit = () => {
                   <Form.Item
                     name="destinations"
                     label="目的地"
-                    rules={[{ required: true, message: '请选择至少一个目的地' }]}
+                    rules={[{ required: true, message: '请选择或输入至少一个目的地' }]}
                   >
                     <Select
                       mode="tags"
-                      placeholder="选择目的地"
+                      placeholder="选择或输入目的地"
                       // onChange={handleDestinationChange}
                       loading={loading}
                       optionFilterProp="children"
@@ -768,25 +775,29 @@ const ItineraryEdit = () => {
             name="location"
             label="地点"
           >
-            <Select
-              mode="tags"
-              placeholder="选择活动地点"
-              // onChange={handleDestinationChange}
+            <AutoComplete
+              placeholder="选择或输入活动地点"
               loading={loading}
               optionFilterProp="children"
-              maxCount={1}
-            // filterOption={(input, option) =>
-            //   option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
-            // }
+              onSearch={value => {
+                if (value) {
+                  const filtered = destinations.filter(destination =>
+                    destination.name.includes(value)
+                  );
+                  setSearchedDestinations(filtered);
+                } else {
+                  setSearchedDestinations(destinations);
+                }
+              }}
             >
               {
-                destinations.map(destination => (
+                searchedDestinations.map(destination => (
                   <Option key={destination.id} value={destination.name}>
                     {destination.name} ({destination.country}, {destination.city})
                   </Option>
                 ))
               }
-            </Select>
+            </AutoComplete>
           </Form.Item>
 
           <Form.Item

@@ -71,6 +71,10 @@ const ItineraryCreate = () => {
     setSelectedDestinations(selected);
   };
 
+  const handleDestinationSearch = (searchText) => {
+    // fetchDestinations(searchText);
+  }
+
   const handleDateRangeChange = (dates) => {
     if (dates && dates.length === 2) {
       const startDate = dates[0];
@@ -216,12 +220,13 @@ const ItineraryCreate = () => {
             <Form.Item
               name="destinations"
               label="目的地"
-              rules={[{ required: true, message: '请选择至少一个目的地' }]}
+              rules={[{ required: true, message: '请选择或输入至少一个目的地' }]}
             >
               <Select
                 mode="tags"
-                placeholder="选择目的地"
+                placeholder="选择或输入目的地"
                 onChange={handleDestinationChange}
+                onSearch={handleDestinationSearch}
                 loading={loading}
                 optionFilterProp="children"
               // filterOption={(input, option) =>
