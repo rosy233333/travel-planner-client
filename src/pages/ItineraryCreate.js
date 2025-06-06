@@ -168,7 +168,7 @@ const ItineraryCreate = () => {
       // 准备创建行程的数据
       const itineraryData = {
         title: values.title,
-        destinations: values.destinations,
+        destinationNames: values.destinations,
         startDate: values.dateRange[0].format('YYYY-MM-DD'),
         endDate: values.dateRange[1].format('YYYY-MM-DD'),
         duration: values.duration,
@@ -187,14 +187,31 @@ const ItineraryCreate = () => {
       // 如果是使用AI生成的，则使用生成的行程
       if (useAI && generatedItinerary) {
         itineraryData.itineraryDays = generatedItinerary.itineraryDays;
+        // 将itineraryDays数据序列化为JSON字符串并保存到dailyPlans字段
+        itineraryData.dailyPlans = JSON.stringify(generatedItinerary.itineraryDays);
       }
 
       const response = await apiService.itineraries.create(itineraryData);
+      console.log('创建行程响应:', response);
 
       message.success('行程创建成功！');
+      
+      // 设置刷新标志，让列表页面知道需要刷新数据
+      localStorage.setItem('refreshItineraryList', 'true');
 
-      // 跳转到行程详情页
-      navigate(`/itineraries/${response.data.itinerary._id}`);
+      // 获取后端返回的行程ID并检查是否存在
+      const itineraryId = response.data.itinerary.id;
+      console.log('行程ID:', itineraryId);
+      
+      if (itineraryId) {
+        // 使用确认存在的ID进行跳转
+        navigate(`/itineraries/${itineraryId}`);
+      } else {
+        // 如果没有获取到ID，则跳转到行程列表页
+        console.error('未能获取有效的行程ID');
+        message.warning('无法获取行程ID，请在行程列表中查看');
+        navigate('/itineraries');
+      }
     } catch (error) {
       console.error('创建行程失败:', error);
       message.error('创建行程失败');

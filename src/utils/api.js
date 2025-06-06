@@ -73,13 +73,29 @@ const apiService = {
 
   // 行程
   itineraries: {
-    getAll: (params) => api.get('/itineraries', { params }),
+    getAll: (params) => api.get('/itineraries/my', { params }),
     getById: (id) => api.get(`/itineraries/${id}`),
+    getCollaborative: (params) => api.get('/itineraries/collaborative', { params }),
     generate: (generationParams) => api.post('/itineraries/generate', generationParams),
     create: (itineraryData) => api.post('/itineraries', itineraryData),
-    update: (id, itineraryData) => api.put(`/itineraries/${id}`, itineraryData),
+    update: (id, itineraryData) => {
+      // 提取版本控制相关字段
+      const { _createNewVersion, _versionMessage, ...cleanItineraryData } = itineraryData;
+      
+      // 将版本控制字段作为查询参数发送
+      const params = {};
+      if (_createNewVersion !== undefined) {
+        params.createNewVersion = _createNewVersion;
+      }
+      if (_versionMessage) {
+        params.versionMessage = _versionMessage;
+      }
+      
+      // 发送不包含特殊字段的数据作为请求体
+      return api.put(`/itineraries/${id}`, cleanItineraryData, { params });
+    },
     manageCollaborators: (id, collaboratorId, action) =>
-      api.post(`/itineraries/${id}/collaborators`, { collaboratorId, action }),
+      api.post(`/itineraries/${id}/manage-collaborators`, { collaboratorId, action }),
     delete: (id) => api.delete(`/itineraries/${id}`)
   },
 
@@ -89,6 +105,15 @@ const apiService = {
     createOrUpdate: (itineraryId, budgetData) => api.post(`/budgets/${itineraryId}`, budgetData),
     addExpense: (itineraryId, expenseData) => api.post(`/budgets/expense/${itineraryId}`, expenseData),
     deleteExpense: (itineraryId, expenseId) => api.delete(`/budgets/expense/${itineraryId}/${expenseId}`),
+  },
+  
+  // 版本历史
+  versions: {
+    getHistory: (itineraryId) => api.get(`/versions/history/${itineraryId}`),
+    getVersionData: (itineraryId, versionNumber) => api.get(`/versions/${itineraryId}/${versionNumber}`),
+    restoreVersion: (itineraryId, versionNumber, changeDescription) => 
+      api.post('/versions/restore', { itineraryId, versionNumber, changeDescription }),
+    getLatestVersion: (itineraryId) => api.get(`/versions/latest/${itineraryId}`)
   }
 };
 
