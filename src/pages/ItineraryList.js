@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import {
   Typography, Card, List, Button, Tag, Space,
-  Dropdown, Menu, Empty, Spin, Input, Select, DatePicker
+  Dropdown, Menu, Empty, Spin, Input, Select, DatePicker, Modal, message
 } from 'antd';
 import {
   PlusOutlined, CalendarOutlined, TeamOutlined,
   DollarOutlined, EllipsisOutlined, FilterOutlined,
-  SearchOutlined, EnvironmentOutlined
+  SearchOutlined, EnvironmentOutlined, EditOutlined, DeleteOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../utils/api';
@@ -31,6 +31,24 @@ const ItineraryList = () => {
     fetchItineraries();
   }, [searchTerm, statusFilter, dateRange]);
 
+  // 手动强制更新逻辑
+  useEffect(() => {
+    // 从localStorage中获取刷新标志
+    const needRefresh = localStorage.getItem('refreshItineraryList');
+    if (needRefresh === 'true') {
+      fetchItineraries();
+      // 清除刷新标志
+      localStorage.removeItem('refreshItineraryList');
+    }
+    
+    // 每次加载页面时刷新一次数据
+    const timer = setTimeout(() => {
+      fetchItineraries();
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
   const fetchItineraries = async () => {
     try {
       setLoading(true);
@@ -51,10 +69,38 @@ const ItineraryList = () => {
       }
 
       console.log(params);
-      const response = await apiService.itineraries.getAll(params);
-      const itineraries = response.data.itineraries;
-      const itineraries_with_destinations = await getDestinationsInItineraries(itineraries);
-      setItineraries(itineraries_with_destinations);
+      
+      // 获取用户创建的行程
+      const myResponse = await apiService.itineraries.getAll(params);
+      console.log('获取我的行程列表响应:', myResponse);
+      
+      // 获取用户参与协作的行程
+      const collaborativeResponse = await apiService.itineraries.getCollaborative(params);
+      console.log('获取协作行程列表响应:', collaborativeResponse);
+      
+      // 合并两个行程列表
+      const myItineraries = myResponse.data.itineraries || [];
+      const collaborativeItineraries = collaborativeResponse.data.itineraries || [];
+      
+      // 为协作行程添加标记
+      const markedCollaborativeItineraries = collaborativeItineraries.map(itinerary => ({
+        ...itinerary,
+        isCollaborative: true
+      }));
+      
+      // 合并并去重（根据ID）
+      const allItineraries = [...myItineraries];
+      
+      // 只添加不存在于我的行程中的协作行程
+      markedCollaborativeItineraries.forEach(collab => {
+        if (!allItineraries.some(item => item.id === collab.id)) {
+          allItineraries.push(collab);
+        }
+      });
+      
+      console.log('合并后的行程列表:', allItineraries);
+      
+      setItineraries(allItineraries);
     } catch (error) {
       console.error('获取行程列表失败:', error);
       setItineraries([TestItinerary]);
@@ -73,6 +119,26 @@ const ItineraryList = () => {
 
   const handleDateRangeChange = (dates) => {
     setDateRange(dates);
+  };
+
+  const handleDelete = (id) => {
+    Modal.confirm({
+      title: '确定要删除此行程吗?',
+      content: '删除后将无法恢复，所有相关的行程数据都将被删除。',
+      okText: '删除',
+      okType: 'danger',
+      cancelText: '取消',
+      async onOk() {
+        try {
+          await apiService.itineraries.delete(id);
+          message.success('行程已成功删除');
+          fetchItineraries(); // 重新获取行程列表
+        } catch (error) {
+          console.error('删除行程失败:', error);
+          message.error('删除行程失败: ' + (error.response?.data?.message || error.message));
+        }
+      }
+    });
   };
 
   const getItineraryStatus = (itinerary) => {
@@ -95,17 +161,17 @@ const ItineraryList = () => {
         {
           key: '1',
           label: '查看详情',
-          onClick: () => navigate(`/itineraries/${itinerary._id}`)
+          onClick: () => navigate(`/itineraries/${itinerary.id}`)
         },
         {
           key: '2',
           label: '编辑行程',
-          onClick: () => navigate(`/itineraries/${itinerary._id}/edit`)
+          onClick: () => navigate(`/itineraries/${itinerary.id}/edit`)
         },
         {
           key: '3',
           label: '管理预算',
-          onClick: () => navigate(`/budgets/${itinerary._id}`)
+          onClick: () => navigate(`/budgets/${itinerary.id}`)
         },
         {
           type: 'divider',
@@ -115,8 +181,7 @@ const ItineraryList = () => {
           label: '删除行程',
           danger: true,
           onClick: () => {
-            // 这里应该弹出确认框，确认后调用删除API
-            console.log('删除行程:', itinerary._id);
+            handleDelete(itinerary.id);
           }
         },
       ]}
@@ -194,68 +259,90 @@ const ItineraryList = () => {
                     <Card
                       hoverable
                       style={{ height: '100%' }}
-                      title={
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {itinerary.title}
+                      cover={
+                        <div 
+                          style={{ 
+                            height: 120, 
+                            background: '#f5f5f5', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center',
+                            padding: '16px',
+                            position: 'relative'
+                          }}
+                        >
+                          <div style={{ 
+                            position: 'absolute', 
+                            top: 0, 
+                            left: 0, 
+                            right: 0, 
+                            padding: '8px 16px', 
+                            background: 'rgba(0,0,0,0.03)',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                          }}>
+                            <div>
+                              <Tag color={status.color}>{status.text}</Tag>
+                              {itinerary.isShared && <Tag color="purple">共享</Tag>}
+                              {itinerary.isCollaborative && <Tag color="geekblue" icon={<TeamOutlined />}>协作</Tag>}
+                            </div>
+                            <Dropdown overlay={getMenu(itinerary)} placement="bottomRight">
+                              <Button type="text" icon={<EllipsisOutlined />} />
+                            </Dropdown>
                           </div>
-                          <Dropdown overlay={getMenu(itinerary)} trigger={['click']} placement="bottomRight">
-                            <Button type="text" icon={<EllipsisOutlined />} onClick={e => e.preventDefault()} />
-                          </Dropdown>
+                          <Title level={4} style={{ margin: 0, textAlign: 'center' }}>
+                            {itinerary.title}
+                          </Title>
                         </div>
                       }
-                      onClick={() => navigate(`/itineraries/${itinerary._id}`)}
                       actions={[
                         <Button
                           type="text"
-                          icon={<CalendarOutlined />}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/itineraries/${itinerary._id}`);
-                          }}
-                        >
-                          详情
-                        </Button>,
-                        <Button
-                          type="text"
-                          icon={<TeamOutlined />}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/itineraries/${itinerary._id}/edit`);
-                          }}
+                          icon={<EditOutlined />}
+                          onClick={() => navigate(`/itineraries/${itinerary.id}/edit`)}
                         >
                           编辑
                         </Button>,
                         <Button
                           type="text"
+                          icon={<CalendarOutlined />}
+                          onClick={() => navigate(`/itineraries/${itinerary.id}`)}
+                        >
+                          查看
+                        </Button>,
+                        <Button
+                          type="text"
                           icon={<DollarOutlined />}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/budgets/${itinerary._id}`);
-                          }}
+                          onClick={() => navigate(`/budgets/${itinerary.id}`)}
                         >
                           预算
                         </Button>
                       ]}
                     >
-                      <div>
-                        <div style={{ marginBottom: 12 }}>
-                          <Tag color={status.color}>{status.text}</Tag>
-                          {itinerary.isShared && <Tag color="purple">共享</Tag>}
-                        </div>
-                        <div style={{ marginBottom: 8 }}>
-                          <CalendarOutlined style={{ marginRight: 8 }} />
-                          <Text>{itinerary.startDate} 至 {itinerary.endDate}</Text>
-                        </div>
-                        <div style={{ marginBottom: 8 }}>
-                          <EnvironmentOutlined style={{ marginRight: 8 }} />
-                          <Text>{itinerary.destinations?.join(', ') || '未指定目的地'}</Text>
-                        </div>
-                        <div>
-                          <DollarOutlined style={{ marginRight: 8 }} />
-                          <Text>预算: ¥{itinerary.totalBudget || 0}</Text>
-                        </div>
-                      </div>
+                      <Card.Meta
+                        description={
+                          <Space direction="vertical" style={{ width: '100%' }}>
+                            <div>
+                              <CalendarOutlined style={{ marginRight: 8 }} />
+                              {itinerary.startDate} 至 {itinerary.endDate}
+                              {itinerary.duration && <span> ({itinerary.duration}天)</span>}
+                            </div>
+                            {itinerary.destinations && itinerary.destinations.length > 0 && (
+                              <div>
+                                <EnvironmentOutlined style={{ marginRight: 8 }} />
+                                {itinerary.destinations.map(d => typeof d === 'object' ? d.name : d).join(', ')}
+                              </div>
+                            )}
+                            {itinerary.totalBudget && (
+                              <div>
+                                <DollarOutlined style={{ marginRight: 8 }} />
+                                预算: ¥{itinerary.totalBudget}
+                              </div>
+                            )}
+                          </Space>
+                        }
+                      />
                     </Card>
                   </List.Item>
                 );

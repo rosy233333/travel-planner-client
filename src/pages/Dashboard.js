@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Typography, Button, Spin, List, Tag } from 'antd';
+import { Card, Row, Col, Typography, Button, Spin, List, Tag, message } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../utils/api';
 import { useAuth } from '../utils/AuthContext';
@@ -20,16 +20,72 @@ const Dashboard = () => {
         
         // 获取推荐的目的地
         if (user && user.preferences) {
-          const response = await apiService.destinations.getRecommendations(user.preferences);
-          setRecommendedDestinations(response.data.destinations.slice(0, 3));
+          try {
+            const response = await apiService.destinations.getRecommendations(user.preferences);
+            setRecommendedDestinations(response.data.destinations.slice(0, 3));
+          } catch (error) {
+            console.error('获取推荐目的地失败:', error);
+          }
         }
         
-        // 获取最近的行程
-        const itinerariesResponse = await apiService.itineraries.getAll({ limit: 3 });
-        setRecentItineraries(itinerariesResponse.data.itineraries);
-        
+        try {
+          // 使用正确的API方法获取行程
+          const myResponse = await apiService.itineraries.getAll({ limit: 10 });
+          console.log('Dashboard - 获取我的行程响应:', myResponse);
+          
+          // 获取用户参与协作的行程
+          const collaborativeResponse = await apiService.itineraries.getCollaborative({ limit: 10 });
+          console.log('Dashboard - 获取协作行程响应:', collaborativeResponse);
+          
+          // 合并两个行程列表
+          const myItineraries = myResponse.data.itineraries || [];
+          const collaborativeItineraries = collaborativeResponse.data.itineraries || [];
+          
+          // 为协作行程添加标记
+          const markedCollaborativeItineraries = collaborativeItineraries.map(itinerary => ({
+            ...itinerary,
+            isCollaborative: true
+          }));
+          
+          // 合并并去重（根据ID）
+          const allItineraries = [...myItineraries];
+          
+          // 只添加不存在于我的行程中的协作行程
+          markedCollaborativeItineraries.forEach(collab => {
+            if (!allItineraries.some(item => item.id === collab.id)) {
+              allItineraries.push(collab);
+            }
+          });
+          
+          console.log('Dashboard - 合并后的行程列表:', allItineraries);
+          
+          if (allItineraries.length === 0) {
+            console.log('Dashboard - 没有行程数据');
+            setRecentItineraries([]);
+          } else {
+            // 获取最近的3个行程
+            const recentItems = allItineraries.slice(0, 3);
+            console.log('Dashboard - 最近行程:', recentItems);
+            setRecentItineraries(recentItems);
+          }
+        } catch (error) {
+          console.error('获取行程失败:', error);
+          // 详细记录错误
+          if (error.response) {
+            console.error('错误响应:', error.response.status, error.response.data);
+          }
+          setRecentItineraries([]);
+        }
       } catch (error) {
         console.error('获取Dashboard数据失败:', error);
+        // 显示更具体的错误信息
+        if (error.response) {
+          message.error(`获取行程数据失败: ${error.response.status} - ${error.response.data?.message || '服务器错误'}`);
+        } else if (error.request) {
+          message.error('获取行程数据失败: 无法连接到服务器');
+        } else {
+          message.error(`获取行程数据失败: ${error.message}`);
+        }
       } finally {
         setLoading(false);
       }
@@ -37,6 +93,14 @@ const Dashboard = () => {
 
     fetchDashboardData();
   }, [user]);
+
+  // 打印每次渲染时的行程数据
+  console.log('Dashboard渲染 - recentItineraries:', recentItineraries);
+
+  // 获取正确的行程ID
+  const getItineraryId = (itinerary) => {
+    return itinerary.id || itinerary._id;
+  };
 
   if (loading) {
     return (
@@ -61,31 +125,42 @@ const Dashboard = () => {
             title="最近行程" 
             extra={<Button type="link" onClick={() => navigate('/itineraries')}>查看全部</Button>}
           >
-            {recentItineraries.length > 0 ? (
+            {recentItineraries && recentItineraries.length > 0 ? (
               <List
                 dataSource={recentItineraries}
-                renderItem={itinerary => (
-                  <List.Item
-                    key={itinerary._id}
-                    actions={[
-                      <Button type="link" onClick={() => navigate(`/itineraries/${itinerary._id}`)}>查看</Button>,
-                      <Button type="link" onClick={() => navigate(`/itineraries/${itinerary._id}/edit`)}>编辑</Button>
-                    ]}
-                  >
-                    <List.Item.Meta
-                      title={itinerary.title}
-                      description={
-                        <>
-                          <div>{itinerary.startDate} 至 {itinerary.endDate}</div>
-                          <div style={{ marginTop: 8 }}>
-                            <Tag color="gold">预算: ¥{itinerary.totalBudget}</Tag>
-                            <Tag color="purple">已花费: ¥{itinerary.currentSpent || 0}</Tag>
-                          </div>
-                        </>
-                      }
-                    />
-                  </List.Item>
-                )}
+                renderItem={itinerary => {
+                  if (!itinerary) return null;
+                  const itineraryId = getItineraryId(itinerary);
+                  if (!itineraryId) return null;
+                  
+                  return (
+                    <List.Item
+                      key={itineraryId}
+                      actions={[
+                        <Button type="link" onClick={() => navigate(`/itineraries/${itineraryId}`)}>查看</Button>,
+                        <Button type="link" onClick={() => navigate(`/itineraries/${itineraryId}/edit`)}>编辑</Button>
+                      ]}
+                    >
+                      <List.Item.Meta
+                        title={
+                          <span>
+                            {itinerary.title}
+                            {itinerary.isCollaborative && <Tag color="blue" style={{ marginLeft: 8 }}>协作</Tag>}
+                          </span>
+                        }
+                        description={
+                          <>
+                            <div>{itinerary.startDate} 至 {itinerary.endDate}</div>
+                            <div style={{ marginTop: 8 }}>
+                              <Tag color="gold">预算: ¥{itinerary.totalBudget}</Tag>
+                              <Tag color="purple">已花费: ¥{itinerary.currentSpent || 0}</Tag>
+                            </div>
+                          </>
+                        }
+                      />
+                    </List.Item>
+                  );
+                }}
               />
             ) : (
               <div style={{ textAlign: 'center', padding: '20px' }}>
