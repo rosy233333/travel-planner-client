@@ -96,6 +96,8 @@ const apiService = {
     },
     manageCollaborators: (id, collaboratorId, action) =>
       api.post(`/itineraries/${id}/manage-collaborators`, { collaboratorId, action }),
+    updateCollaboratorPermissions: (id, collaboratorId, permissions) =>
+      api.put(`/itineraries/${id}/collaborators/${collaboratorId}/permissions`, { permissions }),
     delete: (id) => api.delete(`/itineraries/${id}`)
   },
 

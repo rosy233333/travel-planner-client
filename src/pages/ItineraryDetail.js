@@ -390,6 +390,56 @@ const ItineraryDetail = () => {
     setPermissionModalVisible(true);
   };
 
+  // 处理权限更新
+  const handleUpdatePermission = async (values) => {
+    try {
+      if (!currentCollaborator) {
+        message.error('未选择协作者');
+        return;
+      }
+      
+      console.log('更新权限:', currentCollaborator, values);
+      
+      // 根据选择的权限级别设置不同的权限
+      const permissions = { ...defaultPermissions };
+      
+      if (values.permission === 'EDIT') {
+        permissions.canEdit = true;
+        permissions.canManageSchedule = true;
+      } else {
+        permissions.canEdit = false;
+        permissions.canManageSchedule = false;
+      }
+      
+      // 使用协作者邮箱而不是ID
+      const collaboratorEmail = currentCollaborator.email;
+      
+      // 调用API更新权限
+      await apiService.itineraries.updateCollaboratorPermissions(id, collaboratorEmail, permissions);
+      
+      // 更新本地状态
+      setItinerary(prev => {
+        const updatedItinerary = { ...prev };
+        updatedItinerary.collaborators = updatedItinerary.collaborators.map(c => {
+          if (c.email === collaboratorEmail) {
+            return {
+              ...c,
+              permissions: permissions
+            };
+          }
+          return c;
+        });
+        return updatedItinerary;
+      });
+      
+      message.success('权限设置已更新');
+      setPermissionModalVisible(false);
+    } catch (error) {
+      console.error('更新权限失败:', error);
+      message.error('更新权限失败: ' + (error.response?.data?.message || error.message));
+    }
+  };
+
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '50px' }}>
@@ -997,22 +1047,101 @@ const ItineraryDetail = () => {
       >
         {currentCollaborator && (
           <Form
-            labelCol={{ span: 6 }}
-            wrapperCol={{ span: 18 }}
-            initialValues={{ permission: currentCollaborator.permission }}
-            onFinish={handleUpdatePermission}
+            labelCol={{ span: 10 }}
+            wrapperCol={{ span: 14 }}
+            initialValues={{
+              canView: currentCollaborator.permissions?.canView !== false, // 默认为true
+              canEdit: currentCollaborator.permissions?.canEdit || false,
+              canManageBudget: currentCollaborator.permissions?.canManageBudget || false,
+              canManageSchedule: currentCollaborator.permissions?.canManageSchedule || false,
+              canInviteOthers: currentCollaborator.permissions?.canInviteOthers || false
+            }}
+            onFinish={async (values) => {
+              try {
+                // 直接使用表单值作为权限对象
+                const permissions = {
+                  canView: values.canView,
+                  canEdit: values.canEdit,
+                  canManageBudget: values.canManageBudget,
+                  canManageSchedule: values.canManageSchedule,
+                  canInviteOthers: values.canInviteOthers
+                };
+                
+                // 使用协作者邮箱而不是ID
+                const collaboratorEmail = currentCollaborator.email;
+                
+                // 调用API更新权限
+                await apiService.itineraries.updateCollaboratorPermissions(id, collaboratorEmail, permissions);
+                
+                // 更新本地状态
+                setItinerary(prev => {
+                  const updatedItinerary = { ...prev };
+                  updatedItinerary.collaborators = updatedItinerary.collaborators.map(c => {
+                    if (c.email === collaboratorEmail) {
+                      return {
+                        ...c,
+                        permissions: permissions
+                      };
+                    }
+                    return c;
+                  });
+                  return updatedItinerary;
+                });
+                
+                message.success('权限设置已更新');
+                setPermissionModalVisible(false);
+              } catch (error) {
+                console.error('更新权限失败:', error);
+                message.error('更新权限失败: ' + (error.response?.data?.message || error.message));
+              }
+            }}
           >
             <Form.Item
-              name="permission"
-              label="权限设置"
-              rules={[{ required: true, message: '请选择权限级别' }]}
+              name="canView"
+              label="查看权限"
+              valuePropName="checked"
+              tooltip="允许查看行程的所有内容"
             >
-              <Select>
-                <Select.Option value="VIEW">查看权限</Select.Option>
-                <Select.Option value="EDIT">编辑权限</Select.Option>
-              </Select>
+              <Switch disabled defaultChecked />
             </Form.Item>
-            <Form.Item wrapperCol={{ offset: 6, span: 18 }}>
+            
+            <Form.Item
+              name="canEdit"
+              label="编辑权限"
+              valuePropName="checked"
+              tooltip="允许编辑行程的基本信息"
+            >
+              <Switch />
+            </Form.Item>
+            
+            <Form.Item
+              name="canManageBudget"
+              label="预算管理权限"
+              valuePropName="checked"
+              tooltip="允许查看和修改预算信息"
+            >
+              <Switch />
+            </Form.Item>
+            
+            <Form.Item
+              name="canManageSchedule"
+              label="日程管理权限"
+              valuePropName="checked"
+              tooltip="允许添加和修改日程安排"
+            >
+              <Switch />
+            </Form.Item>
+            
+            <Form.Item
+              name="canInviteOthers"
+              label="邀请权限"
+              valuePropName="checked"
+              tooltip="允许邀请其他协作者"
+            >
+              <Switch />
+            </Form.Item>
+            
+            <Form.Item wrapperCol={{ offset: 10, span: 14 }}>
               <Button type="primary" htmlType="submit">
                 保存
               </Button>
