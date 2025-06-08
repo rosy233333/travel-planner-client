@@ -168,7 +168,7 @@ const ItineraryCreate = () => {
       // 准备创建行程的数据
       const itineraryData = {
         title: values.title,
-        destinationNames: values.destinations,
+        destinations: values.destinations,
         startDate: values.dateRange[0].format('YYYY-MM-DD'),
         endDate: values.dateRange[1].format('YYYY-MM-DD'),
         duration: values.duration,
@@ -195,14 +195,14 @@ const ItineraryCreate = () => {
       console.log('创建行程响应:', response);
 
       message.success('行程创建成功！');
-      
+
       // 设置刷新标志，让列表页面知道需要刷新数据
       localStorage.setItem('refreshItineraryList', 'true');
 
       // 获取后端返回的行程ID并检查是否存在
       const itineraryId = response.data.itinerary.id;
       console.log('行程ID:', itineraryId);
-      
+
       if (itineraryId) {
         // 使用确认存在的ID进行跳转
         navigate(`/itineraries/${itineraryId}`);

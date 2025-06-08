@@ -57,26 +57,26 @@ const ItineraryEdit = () => {
       try {
         const response = await apiService.itineraries.getById(id);
         console.log('API返回的原始数据:', response.data);
-        
+
         // itinerary_ = getDestinationsInItinerary(response.data.itinerary);
         itinerary_ = response.data.itinerary;
         console.log('行程基本信息:', itinerary_);
         console.log('dailyPlans原始数据:', itinerary_.dailyPlans);
         console.log('itineraryDays原始数据:', itinerary_.itineraryDays);
-        
+
         // 如果没有itineraryDays但有dailyPlans，尝试解析
         if (itinerary_.dailyPlans) {
           try {
             console.log('尝试解析dailyPlans:', itinerary_.dailyPlans);
             console.log('dailyPlans类型:', typeof itinerary_.dailyPlans);
-            
+
             // 确保dailyPlans是字符串
             let dailyPlansStr = itinerary_.dailyPlans;
             if (typeof dailyPlansStr !== 'string') {
               console.log('dailyPlans不是字符串，进行转换');
               dailyPlansStr = JSON.stringify(dailyPlansStr);
             }
-            
+
             // 尝试解析dailyPlans
             let dailyPlansObj;
             try {
@@ -84,7 +84,7 @@ const ItineraryEdit = () => {
               console.log('解析后的dailyPlans对象:', dailyPlansObj);
               console.log('dailyPlansObj类型:', typeof dailyPlansObj);
               console.log('dailyPlansObj是否为数组:', Array.isArray(dailyPlansObj));
-              
+
               // 如果解析结果是字符串，可能是双重编码，再次尝试解析
               if (typeof dailyPlansObj === 'string') {
                 console.log('dailyPlansObj仍然是字符串，可能是双重编码，再次尝试解析');
@@ -110,11 +110,11 @@ const ItineraryEdit = () => {
                 throw e; // 抛出原始错误
               }
             }
-            
+
             // 将对象格式的dailyPlans转换为数组格式的itineraryDays
             // 从 {day1: {date:..., activities:[...]}, day2:{...}} 转换为 [{date:..., activities:[...]}, ...]
             const itineraryDays = [];
-            
+
             // 处理两种可能的格式
             if (Array.isArray(dailyPlansObj)) {
               // 如果已经是数组格式，直接使用
@@ -124,7 +124,7 @@ const ItineraryEdit = () => {
               // 如果是对象格式，转换为数组
               console.log('dailyPlans是对象格式，转换为数组');
               console.log('对象键:', Object.keys(dailyPlansObj));
-              
+
               Object.keys(dailyPlansObj).forEach(key => {
                 const dayData = dailyPlansObj[key];
                 console.log(`处理${key}:`, dayData);
@@ -135,30 +135,30 @@ const ItineraryEdit = () => {
                   });
                 }
               });
-              
+
               // 按日期排序
               itineraryDays.sort((a, b) => new Date(a.date) - new Date(b.date));
-              
+
               itinerary_.itineraryDays = itineraryDays;
             } else {
               console.error('无法识别的dailyPlans格式:', dailyPlansObj);
               itinerary_.itineraryDays = [];
             }
-            
+
             console.log('解析后的itineraryDays:', itinerary_.itineraryDays);
             console.log('itineraryDays长度:', itinerary_.itineraryDays.length);
-            
+
             // 确保每个日期的活动都是数组
             itinerary_.itineraryDays.forEach((day, index) => {
-              console.log(`检查第${index+1}天的活动:`, day);
+              console.log(`检查第${index + 1}天的活动:`, day);
               if (!day.activities) {
-                console.log(`第${index+1}天没有activities字段，设置为空数组`);
+                console.log(`第${index + 1}天没有activities字段，设置为空数组`);
                 day.activities = [];
               } else if (!Array.isArray(day.activities)) {
-                console.log(`第${index+1}天的activities不是数组，转换为数组`);
+                console.log(`第${index + 1}天的activities不是数组，转换为数组`);
                 day.activities = [day.activities];
               }
-              console.log(`第${index+1}天的活动数量:`, day.activities.length);
+              console.log(`第${index + 1}天的活动数量:`, day.activities.length);
             });
           } catch (e) {
             console.error('解析dailyPlans失败:', e);
@@ -177,7 +177,7 @@ const ItineraryEdit = () => {
         console.error('错误详情:', error.response?.data || error.message);
         itinerary_ = TestItinerary;
       }
-      
+
       console.log('设置到状态的行程数据:', itinerary_);
       console.log('行程中的日程安排数据:', itinerary_.itineraryDays);
       setItinerary(itinerary_);
@@ -192,7 +192,7 @@ const ItineraryEdit = () => {
           moment(itinerary_.startDate),
           moment(itinerary_.endDate)
         ],
-        duration: itinerary_.duration,
+        duration: moment(itinerary_.endDate).diff(moment(itinerary_.startDate), 'days') + 1,
         totalBudget: itinerary_.totalBudget,
         description: itinerary_.description,
         isShared: itinerary_.isShared,
@@ -281,7 +281,7 @@ const ItineraryEdit = () => {
           specialRequirements: values.specialRequirements
         }
       };
-      
+
       // 添加版本控制参数（这些将被后端单独处理，不是实体的一部分）
       itineraryData._createNewVersion = true; // 指示后端创建新版本
       itineraryData._versionMessage = '更新了行程基本信息'; // 版本说明
@@ -302,10 +302,10 @@ const ItineraryEdit = () => {
   const handleSaveScheduleChanges = async () => {
     try {
       setSaving(true);
-      
+
       // 深拷贝当前行程
       const updatedItinerary = JSON.parse(JSON.stringify(itinerary));
-      
+
       // 确保将itineraryDays数据序列化为JSON字符串并保存到dailyPlans字段
       if (updatedItinerary.itineraryDays) {
         // 将数组格式的itineraryDays转换为对象格式的dailyPlans
@@ -320,33 +320,33 @@ const ItineraryEdit = () => {
             location: activity.location || '',
             description: activity.description || ''
           }));
-          
-          formattedDailyPlans[`day${index+1}`] = {
+
+          formattedDailyPlans[`day${index + 1}`] = {
             date: day.date,
             activities: activities
           };
         });
-        
+
         updatedItinerary.dailyPlans = JSON.stringify(formattedDailyPlans);
         console.log('序列化后的dailyPlans:', updatedItinerary.dailyPlans);
       }
-      
+
       // 创建一个精简版的数据对象，只包含必要的字段
       // 注意：_createNewVersion和_versionMessage必须作为独立参数发送，不能作为itinerary实体的一部分
       const minimalUpdate = {
         id: updatedItinerary.id,
         dailyPlans: updatedItinerary.dailyPlans
       };
-      
+
       // 添加版本控制参数（这些将被后端单独处理，不是实体的一部分）
       minimalUpdate._createNewVersion = true; // 指示后端创建新版本
       minimalUpdate._versionMessage = '更新了日程安排'; // 版本说明
-      
+
       try {
         // 更新行程
         const response = await apiService.itineraries.update(id, minimalUpdate);
         console.log('保存日程安排响应:', response);
-        
+
         message.success('日程安排已保存，并创建了新版本');
         await fetchItineraryDetail(); // 重新获取行程信息
       } catch (updateError) {
@@ -361,12 +361,12 @@ const ItineraryEdit = () => {
       setSaving(false);
     }
   };
-  
+
   // 保存协作者修改并创建新版本
   const handleSaveCollaboratorChanges = async () => {
     try {
       setSaving(true);
-      
+
       // 创建一个精简版的数据对象，只包含协作者信息
       const collaboratorUpdate = {
         id: itinerary.id,
@@ -374,7 +374,7 @@ const ItineraryEdit = () => {
         _createNewVersion: true, // 指示后端创建新版本
         _versionMessage: '更新了协作者' // 版本说明
       };
-      
+
       await apiService.itineraries.update(id, collaboratorUpdate);
       message.success('协作者信息已保存，并创建了新版本');
       await fetchItineraryDetail(); // 重新获取行程信息
@@ -474,7 +474,7 @@ const ItineraryEdit = () => {
 
       console.log('更新行程数据:', updatedItinerary);
       console.log('日程安排数据:', updatedItinerary.itineraryDays);
-      
+
       // 将数组格式的itineraryDays转换为对象格式的dailyPlans
       // 后端期望的格式为 {day1: {date:..., activities:[...]}, day2:{...}}
       const formattedDailyPlans = {};
@@ -487,33 +487,33 @@ const ItineraryEdit = () => {
           location: activity.location || '',
           description: activity.description || ''
         }));
-        
-        formattedDailyPlans[`day${index+1}`] = {
+
+        formattedDailyPlans[`day${index + 1}`] = {
           date: day.date,
           activities: activities
         };
       });
-      
+
       // 更新dailyPlans字段
       updatedItinerary.dailyPlans = JSON.stringify(formattedDailyPlans);
       console.log('序列化后的dailyPlans:', updatedItinerary.dailyPlans);
-      
+
       // 创建一个精简版的数据对象，只包含必要的字段
       const minimalUpdate = {
         id: updatedItinerary.id,
         dailyPlans: updatedItinerary.dailyPlans
       };
-      
+
       // 不创建新版本，只在点击"保存修改"按钮时创建
       // minimalUpdate._createNewVersion = true; 
       // minimalUpdate._versionMessage = currentActivity ? `更新了活动: ${values.title}` : `添加了新活动: ${values.title}`;
       console.log('发送的更新数据:', minimalUpdate);
-      
+
       try {
         // 更新行程
         const response = await apiService.itineraries.update(id, minimalUpdate);
         console.log('保存活动响应:', response);
-        
+
         message.success(currentActivity ? '活动更新成功' : '活动添加成功');
         setActivityModalVisible(false);
         activityForm.resetFields();
@@ -533,13 +533,13 @@ const ItineraryEdit = () => {
     try {
       // 深拷贝当前行程
       const updatedItinerary = JSON.parse(JSON.stringify(itinerary));
-      
+
       // 确保itineraryDays存在
       if (!updatedItinerary.itineraryDays) {
         message.error('行程数据不完整，无法删除活动');
         return;
       }
-      
+
       const dayIndex = updatedItinerary.itineraryDays.findIndex(d => d.date === day.date);
 
       if (dayIndex !== -1) {
@@ -548,7 +548,7 @@ const ItineraryEdit = () => {
           message.error('该日期没有活动数据');
           return;
         }
-        
+
         const actIndex = updatedItinerary.itineraryDays[dayIndex].activities.findIndex(
           a => a.title === activity.title && a.timeStart === activity.timeStart
         );
@@ -569,13 +569,13 @@ const ItineraryEdit = () => {
               location: activity.location || '',
               description: activity.description || ''
             }));
-            
-            formattedDailyPlans[`day${index+1}`] = {
+
+            formattedDailyPlans[`day${index + 1}`] = {
               date: day.date,
               activities: activities
             };
           });
-          
+
           // 更新dailyPlans字段
           updatedItinerary.dailyPlans = JSON.stringify(formattedDailyPlans);
 
@@ -584,11 +584,11 @@ const ItineraryEdit = () => {
             id: updatedItinerary.id,
             dailyPlans: updatedItinerary.dailyPlans
           };
-          
+
           // 不创建新版本，只在点击"保存修改"按钮时创建
           // minimalUpdate._createNewVersion = true;
           // minimalUpdate._versionMessage = `删除了活动: ${activity.title}`;
-          
+
           console.log('发送的更新数据:', minimalUpdate);
 
           try {
@@ -672,7 +672,7 @@ const ItineraryEdit = () => {
       console.warn('缺少开始日期或结束日期');
       return [];
     }
-    
+
     const start = moment(startDate);
     const end = moment(endDate);
     const days = [];
@@ -715,7 +715,7 @@ const ItineraryEdit = () => {
   // 合并现有活动到日期数组
   if (itinerary.itineraryDays && itinerary.itineraryDays.length > 0) {
     console.log('合并前的itineraryDays:', itinerary.itineraryDays);
-    
+
     // 确保每个活动都有必要的字段
     itinerary.itineraryDays.forEach(day => {
       if (day.activities) {
@@ -731,10 +731,10 @@ const ItineraryEdit = () => {
       } else {
         day.activities = [];
       }
-      
+
       const index = days.findIndex(d => d.date === day.date);
       console.log(`处理日期 ${day.date}, 在days中的索引: ${index}`);
-      
+
       if (index !== -1) {
         console.log(`日期 ${day.date} 的活动:`, day.activities);
         days[index].activities = day.activities || [];
@@ -742,7 +742,7 @@ const ItineraryEdit = () => {
         console.warn(`日期 ${day.date} 不在行程范围内`);
       }
     });
-    
+
     console.log('合并后的days数组:', days);
   } else {
     console.log('没有itineraryDays数据可合并');
@@ -945,89 +945,91 @@ const ItineraryEdit = () => {
           <Card>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <Title level={4}>日程安排</Title>
-              <Button 
-                type="primary" 
+              <Button
+                type="primary"
                 onClick={handleSaveScheduleChanges}
                 loading={saving}
               >
                 保存修改
               </Button>
             </div>
-            
+
             <Timeline>
               {days.map((day, index) => {
-                console.log(`渲染第${index+1}天 ${day.date}:`, day);
+                console.log(`渲染第${index + 1}天 ${day.date}:`, day);
                 return (
-                <Timeline.Item color="blue" key={day.date}>
-                  <div style={{ marginBottom: 16 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Title level={4}>
-                        第 {index + 1} 天 ({day.date}) {day.dayOfWeek}
-                      </Title>
-                      <Button
-                        type="primary"
-                        icon={<PlusOutlined />}
-                        onClick={() => showAddActivityModal(day)}
-                      >
-                        添加活动
-                      </Button>
-                    </div>
+                  <Timeline.Item color="blue" key={day.date}>
+                    <div style={{ marginBottom: 16 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Title level={4}>
+                          第 {index + 1} 天 ({day.date}) {day.dayOfWeek}
+                        </Title>
+                        <Button
+                          type="primary"
+                          icon={<PlusOutlined />}
+                          onClick={() => showAddActivityModal(day)}
+                        >
+                          添加活动
+                        </Button>
+                      </div>
 
-                    {day.activities && day.activities.length > 0 ? (
-                      <>
-                        <div style={{marginBottom: 8}}>活动数量: {day.activities.length}</div>
-                        <List
-                          itemLayout="horizontal"
-                          dataSource={day.activities}
-                          renderItem={(activity, actIndex) => {
-                            console.log(`渲染活动 ${actIndex+1}:`, activity);
-                            return (
-                            <List.Item
-                              actions={[
-                                <Button
-                                  type="text"
-                                  icon={<EditOutlined />}
-                                  onClick={() => showEditActivityModal(day, activity)}
+                      {day.activities && day.activities.length > 0 ? (
+                        <>
+                          <div style={{ marginBottom: 8 }}>活动数量: {day.activities.length}</div>
+                          <List
+                            itemLayout="horizontal"
+                            dataSource={day.activities}
+                            renderItem={(activity, actIndex) => {
+                              console.log(`渲染活动 ${actIndex + 1}:`, activity);
+                              return (
+                                <List.Item
+                                  actions={[
+                                    <Button
+                                      type="text"
+                                      icon={<EditOutlined />}
+                                      onClick={() => showEditActivityModal(day, activity)}
+                                    >
+                                      编辑
+                                    </Button>,
+                                    <Button
+                                      type="text"
+                                      danger
+                                      icon={<DeleteOutlined />}
+                                      onClick={() => handleRemoveActivity(day, activity)}
+                                    >
+                                      删除
+                                    </Button>
+                                  ]}
                                 >
-                                  编辑
-                                </Button>,
-                                <Button
-                                  type="text"
-                                  danger
-                                  icon={<DeleteOutlined />}
-                                  onClick={() => handleRemoveActivity(day, activity)}
-                                >
-                                  删除
-                                </Button>
-                              ]}
-                            >
-                              <List.Item.Meta
-                                avatar={<Avatar style={{ backgroundColor: '#91d5ff' }}>{actIndex + 1}</Avatar>}
-                                title={
-                                  <div>
-                                    {activity.title} 
-                                    <Tag color="blue" style={{ marginLeft: 8 }}>
-                                      {activity.timeStart} - {activity.timeEnd}
-                                    </Tag>
-                                  </div>
-                                }
-                                description={
-                                  <>
-                                    <div><EnvironmentOutlined /> {activity.location || '未设置地点'}</div>
-                                    <div>{activity.description || '无描述'}</div>
-                                  </>
-                                }
-                              />
-                            </List.Item>
-                          )}}
-                        />
-                      </>
-                    ) : (
-                      <Empty description="暂无活动安排" />
-                    )}
-                  </div>
-                </Timeline.Item>
-              )})}
+                                  <List.Item.Meta
+                                    avatar={<Avatar style={{ backgroundColor: '#91d5ff' }}>{actIndex + 1}</Avatar>}
+                                    title={
+                                      <div>
+                                        {activity.title}
+                                        <Tag color="blue" style={{ marginLeft: 8 }}>
+                                          {activity.timeStart} - {activity.timeEnd}
+                                        </Tag>
+                                      </div>
+                                    }
+                                    description={
+                                      <>
+                                        <div><EnvironmentOutlined /> {activity.location || '未设置地点'}</div>
+                                        <div>{activity.description || '无描述'}</div>
+                                      </>
+                                    }
+                                  />
+                                </List.Item>
+                              )
+                            }}
+                          />
+                        </>
+                      ) : (
+                        <Empty description="暂无活动安排" />
+                      )}
+                    </div>
+                  </Timeline.Item>
+                )
+              })}
             </Timeline>
           </Card>
         </TabPane>
@@ -1045,7 +1047,7 @@ const ItineraryEdit = () => {
               >
                 添加协作者
               </Button>
-              
+
               <Button
                 type="primary"
                 onClick={handleSaveCollaboratorChanges}
